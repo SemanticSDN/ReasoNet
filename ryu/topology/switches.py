@@ -499,7 +499,7 @@ class Switches(app_manager.RyuApp):
     _EVENTS = [event.EventSwitchEnter, event.EventSwitchLeave,
                event.EventSwitchReconnected,
                event.EventPortAdd, event.EventPortDelete,
-               event.EventPortModify,
+               event.EventPortModify, ofp_event.EventOFPPacketIn,
                event.EventLinkAdd, event.EventLinkDelete,
                event.EventHostAdd]
 
@@ -837,9 +837,11 @@ class Switches(app_manager.RyuApp):
     def host_discovery_packet_in_handler(self, ev):
         msg = ev.msg
         eth, pkt_type, pkt_data = ethernet.ethernet.parser(msg.data)
+        host_mac = eth.src
 
         # ignore lldp and cfm packets
         if eth.ethertype in (ETH_TYPE_LLDP, ETH_TYPE_CFM):
+            # LOG.error("got an LLDP packet")
             return
 
         datapath = msg.datapath
@@ -852,8 +854,8 @@ class Switches(app_manager.RyuApp):
             port_no = msg.match['in_port']
 
         port = self._get_port(dpid, port_no)
-
         # can't find this port(ex: logic port)
+        # LOG.error("discovered %s -> %s:%s", host_mac, port.dpid, port.port_no)
         if not port:
             return
         # ignore switch-to-switch port
@@ -983,7 +985,7 @@ class Switches(app_manager.RyuApp):
 
     @set_ev_cls(event.EventSwitchRequest)
     def switch_request_handler(self, req):
-        # LOG.debug(req)
+        LOG.debug(req)
         dpid = req.dpid
 
         switches = []
