@@ -13,6 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
+
 from ryu.base import app_manager
 from ryu.topology import switches
 from ryu.controller import ofp_event
@@ -22,7 +24,11 @@ from ryu.ofproto import ofproto_v1_3
 
 from rdflib import Graph, Literal, URIRef
 from rdflib.plugins.stores import sparqlstore
+from os import system
 
+import re
+
+LOG = logging.getLogger("StardogBackend")
 
 class EventInsertTuples(event.EventRequestBase):
     def __init__(self, g):
@@ -59,18 +65,45 @@ class StardogBackend(app_manager.RyuApp):
         self.store.setCredentials('admin', 'admin')
         self.default_graph = URIRef('http://home.eps.hw.ac.uk/~qz1/')
         self.ng = Graph(self.store, identifier=self.default_graph)
+
+        # Dirty hack to cleat the db upon restart
+        system('curl -X POST -d "query=CLEAR ALL" "http://admin:admin@172.18.2.106:5820/test/query"')
         return
+
+    def insert_tuples(self, g):
+        cmd = (u'INSERT DATA { %s  }' % (
+                   g.serialize(format='n3')
+        ))
+        self.store.update(cmd)
+        self.store.commit()
+        return True
 
     @set_ev_cls(EventInsertTuples)
     def _insert_tuple_handler(self, ev):
-        print('received request to insert tuples')
-        self.store.update(
-                u'INSERT DATA { %s  }' % ev.g.serialize(format='nt')
-        )
-        self.store.commit()
-
-        rep = EventInsertTuplesReply(ev.src, True)
+#        print('received request to insert tuples %s ' % ev.g.serialize(format='nt'))
+        res = self.insert_tuples(ev.g)
+        rep = EventInsertTuplesReply(ev.src, res)
         self.reply_to_request(ev, rep)
         return
+
+    def _get_mac_of_host(self, ip):
+        # run a query to get MAC address
+        rq = """
+        PREFIX of: <http://home.eps.hw.ac.uk/~qz1/>
+        SELECT distinct ?host ?mac {
+        { ?host a of:Host .
+        ?host of:hasIPv4 '%s'.
+        ?host of:hasMAC ?mac
+        }
+        }
+        """ % (ip)
+        res = self.store.query(rq)
+        if len(res) == 0:
+            LOG.error("Failed to find host with IP addr %s"%(ip))
+            return None
+
+        dst_host, dst_mac = next(iter(res))
+        return (dst_host, dst_mac)
+
 
 
