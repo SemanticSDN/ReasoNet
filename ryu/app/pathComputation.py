@@ -96,27 +96,31 @@ class PathComputation(app_manager.RyuApp):
         if path is None or len(path) == 0:
             LOG.error("No path found between \'%s\' and \'%s\'" % (src_mac, dst_mac))
             return
-
+        hop_count = len(path)
         for (src_port, dpid, dst_port) in reversed(path):
             if dpid in self.dps:
                 self._insert_host_connect_flows(self.dps[dpid], buffer_id,
                                                 src_port, src_mac,
-                                                dst_port, dst_mac)
+                                                dst_port, dst_mac, hop_count)
+                hop_count = hop_count - 1
+        hop_count = 0
         for (src_port, dpid, dst_port) in path:
                 # setup inverse path
                 self._insert_host_connect_flows(self.dps[dpid],
                                                 self.dps[dpid].ofproto.OFPCML_NO_BUFFER,
                                                 dst_port, dst_mac,
-                                                src_port, src_mac)
+                                                src_port, src_mac, hop_count)
+                hop_count = hop_count + 1
 
         self.backend.add_path_state(src_mac, dst_mac)
 
-    def _insert_host_connect_flows(self, dp, buffer_id, src_port, src_mac, dst_port, dst_mac):
+    def _insert_host_connect_flows(self, dp, buffer_id, src_port, src_mac, dst_port, dst_mac, hop_count):
         ofproto = dp.ofproto
         parser = dp.ofproto_parser
+        pathid = "path_%s_%s"%(src_mac, dst_mac)
         actions = [parser.OFPActionOutput(dst_port, ofproto.OFPCML_NO_BUFFER)]
         match = parser.OFPMatch(in_port=src_port, eth_dst=dst_mac, eth_src=src_mac)
-        return self.flowManager.add_flow(dp, 1, match, actions, buffer_id)
+        return self.flowManager.add_path_flow(pathid, hop_count, dp, 1, match, actions, buffer_id)
 
 #    def add_flow(self, datapath, priority, match, actions, buffer_id):
 #        ofproto = datapath.ofproto

@@ -154,6 +154,7 @@ class SemanticWeb(app_manager.RyuApp):
                 g.add( (self.ns[s], self.ns.hasID, Literal(sw.dp.id))  )
 
                 for p in sw.ports:
+#                     LOG.info(str(p.state))
                     pid = s + "_port" + str(p.port_no)
                     g.add( (self.ns[s], self.ns.hasPort, self.ns[pid])  )
                     g.add( (self.ns[pid], RDF.type, self.ns['Port'])  )
@@ -161,6 +162,8 @@ class SemanticWeb(app_manager.RyuApp):
                     g.add( (self.ns[pid], self.ns.hasName,    Literal(p.name))  )
                     g.add( (self.ns[pid], self.ns.hasMAC,  Literal(p.hw_addr))  )
                     g.add( (self.ns[pid], self.ns.port_no,    Literal(p.port_no))  )
+                    g.add( (self.ns[pid], self.ns.port_no,    Literal(p.port_no))  )
+                    g.add( (self.ns[pid], self.ns.isUP,    Literal(p.is_live())  ) )
 
             hosts = self.get_hosts()
             hid_gen = 0

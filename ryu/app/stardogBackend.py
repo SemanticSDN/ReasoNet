@@ -67,6 +67,10 @@ class StardogBackend(app_manager.RyuApp):
 
         # Dirty hack to cleat the db upon restart
         system('curl -X POST -d "query=CLEAR ALL" "http://admin:admin@172.18.2.106:5820/test/query"')
+
+        g = Graph()
+        g.parse("/home/ubuntu/ryu-haris/ryu/app/my_constraints.ttl", format="n3")
+        self.insert_tuples(g)
         return
 
     def insert_tuples(self, g):
@@ -135,6 +139,8 @@ class StardogBackend(app_manager.RyuApp):
         g.add( (self.ns[flid], self.ns.table_id,     Literal(0)) )
         g.add( (self.ns[flid], self.ns.cookie,       Literal(id)) )
         g.add( (self.ns[flid], self.ns.hopCount,       Literal(hopCount)) )
+        g.add( (self.ns[flid], self.ns.path,       self.ns[pathid]) )
+        g.add( (self.ns[pathid], self.ns.hasFlow,  self.ns[flid] )   )
 
 
         for (field, val) in match.iteritems():
@@ -172,10 +178,11 @@ class StardogBackend(app_manager.RyuApp):
         action_count = 0
         for action in actions:
             actid = flid + '_action' + str(action_count)
+            pid = sid + "_port" + str(action.port)
             g.add( (self.ns[flid], self.ns.hasAction, self.ns[actid]) )
             if action.type == 0:
                 g.add( (self.ns[actid], RDF.type, self.ns['ActionOutput']) )
-                g.add( (self.ns[actid], self.ns.toPort, Literal(action.port)   ) )
+                g.add( (self.ns[actid], self.ns.toPort, self.ns[pid] ) )
                 action_count = action_count + 1
 
         self.insert_tuples(g)

@@ -86,6 +86,21 @@ class FlowManager(app_manager.RyuApp):
         self.flow_count = self.flow_count + 1
         return datapath.send_msg(mod)
 
+    def add_path_flow(self, pathid, hopCount, datapath, priority, match, actions, buffer_id):
+        ofproto = datapath.ofproto
+        parser = datapath.ofproto_parser
+
+        self.backend.add_path_flow_state(self.flow_count, datapath.id, priority, match, actions,
+                                         hopCount, pathid)
+
+        inst = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS, actions)]
+        mod = parser.OFPFlowMod(datapath=datapath, priority=priority, match=match,
+                                instructions=inst, buffer_id=buffer_id, cookie=self.flow_count)
+        LOG.info("adding path %s flow %s" % (pathid, str(mod)))
+        self.flow_count = self.flow_count + 1
+        return datapath.send_msg(mod)
+
+
 
     def flow_monitor(self):
        while self.is_active:
