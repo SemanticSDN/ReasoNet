@@ -103,7 +103,7 @@ class PathComputation(app_manager.RyuApp):
                                                 src_port, src_mac,
                                                 dst_port, dst_mac, hop_count)
                 hop_count = hop_count - 1
-        hop_count = 0
+        hop_count = 1
         for (src_port, dpid, dst_port) in path:
                 # setup inverse path
                 self._insert_host_connect_flows(self.dps[dpid],
@@ -113,6 +113,7 @@ class PathComputation(app_manager.RyuApp):
                 hop_count = hop_count + 1
 
         self.backend.add_path_state(src_mac, dst_mac)
+        self.backend.add_path_state(dst_mac, src_mac)
 
     def _insert_host_connect_flows(self, dp, buffer_id, src_port, src_mac, dst_port, dst_mac, hop_count):
         ofproto = dp.ofproto
