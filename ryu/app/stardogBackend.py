@@ -57,7 +57,8 @@ class StardogBackend(app_manager.RyuApp):
     def __init__(self, *args, **kwargs):
         super(StardogBackend, self).__init__(*args, **kwargs)
         self.name = 'stardogBackend'
-        self.endpoint = 'http://172.18.2.106:5820/test/query'
+        self.db = "test-arsham"
+        self.endpoint = 'http://172.18.2.106:5820/%s/query'%(self.db)
         self.store = sparqlstore.SPARQLUpdateStore()
         self.store.open((self.endpoint, self.endpoint))
         self.store.setCredentials('admin', 'admin')
@@ -66,7 +67,7 @@ class StardogBackend(app_manager.RyuApp):
         self.ng = Graph(self.store, identifier=self.default_graph)
 
         # Dirty hack to cleat the db upon restart
-        system('curl -X POST -d "query=CLEAR ALL" "http://admin:admin@172.18.2.106:5820/test/query"')
+        system('curl -X POST -d "query=CLEAR ALL" "http://admin:admin@172.18.2.106:5820/%s/query"'%(self.db))
 
         g = Graph()
         g.parse("/home/ubuntu/ryu-haris/ryu/app/my_constraints.ttl", format="n3")
@@ -80,6 +81,10 @@ class StardogBackend(app_manager.RyuApp):
         self.store.update(cmd)
         self.store.commit()
         return True
+
+    def update(self, cmd):
+        self.store.update(cmd)
+        return self.store.commit()
 
 #    @set_ev_cls(EventInsertTuples)
 #    def _insert_tuple_handler(self, ev):
@@ -114,8 +119,8 @@ class StardogBackend(app_manager.RyuApp):
 
         insert {
             of:path_%s_%s a of:Path;
-            of:src_path ?host1;
-            of:dst_path ?host2
+            of:hasSrc ?host1;
+            of:hasDst ?host2
         }
         where {
             ?host1 a of:Host; of:hasMAC "%s".
@@ -149,10 +154,11 @@ class StardogBackend(app_manager.RyuApp):
         action_count = 0
         for action in actions:
             actid = flid + '_action' + str(action_count)
+            pid = sid + "_port" + str(action.port)
             g.add( (self.ns[flid], self.ns.hasAction, self.ns[actid]) )
             if action.type == 0:
                 g.add( (self.ns[actid], RDF.type, self.ns['ActionOutput']) )
-                g.add( (self.ns[actid], self.ns.toPort, Literal(action.port)   ) )
+                g.add( (self.ns[actid], self.ns.toPort, self.ns[pid] ) )
                 action_count = action_count + 1
 
         self.insert_tuples(g)
