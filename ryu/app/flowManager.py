@@ -105,7 +105,7 @@ class FlowManager(app_manager.RyuApp):
     def flow_monitor(self):
        while self.is_active:
             self.export_event.clear()
-            LOG.info("flow monitor fired!")
+#            LOG.info("flow monitor fired!")
             flows = self.get_flows()
             self.export_event.wait(timeout=self.TIMEOUT_CHECK_PERIOD)
 

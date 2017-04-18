@@ -271,7 +271,7 @@ class SemanticWeb(app_manager.RyuApp):
     def export_loop(self):
         while self.is_active:
             self.export_event.clear()
-            LOG.debug("periodic event fired!")
+#           LOG.debug("periodic event fired!")
             g = Graph()
 ##            try:
 #            sws = self.get_switches()

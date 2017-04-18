@@ -20,7 +20,9 @@ from ryu.topology import switches
 from ryu.controller import event
 from ryu.ofproto import ofproto_v1_3
 
-from rdflib import Graph, Literal, URIRef, Namespace
+from rdflib import Graph, URIRef
+
+from rdflib import Literal, Namespace
 from rdflib.plugins.stores import sparqlstore
 from rdflib.namespace import RDF
 from os import system
@@ -97,11 +99,12 @@ class StardogBackend(app_manager.RyuApp):
     def get_mac_of_host(self, ip):
         # run a query to get MAC address
         rq = """
-        PREFIX of: <http://home.eps.hw.ac.uk/~qz1/>
-        SELECT distinct ?host ?mac {
-        { ?host a of:Host .
-        ?host of:hasIPv4 '%s'.
-        ?host of:hasMAC ?mac
+        PREFIX : <http://home.eps.hw.ac.uk/~qz1/>
+        SELECT distinct ?host ?mac
+        WHERE {
+        { ?host a :Host .
+        ?host :hasIPv4 '%s'.
+        ?host :hasMAC ?mac
         }
         }
         """ % (ip)
@@ -112,6 +115,46 @@ class StardogBackend(app_manager.RyuApp):
 
         dst_host, dst_mac = next(iter(res))
         return (dst_host, dst_mac)
+
+    def _check_inconsistent_flow(self):
+        # check if the link is down but the corresponding flow is still forwarding
+        qstr = """
+        @PREFIX : <http://home.eps.hw.ac.uk/~qz1/> .
+        @PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+        SELECT ?port1 ?port2
+        WHERE {
+            ?l a :Link;
+                :hasStatus "(MISSING MISSING)"^^xsd:String; # find the down links
+                :linkTo ?p1;
+                :linkTo ?p2.
+            filter (?p1 != ?p2).
+
+            ?p1 :hasMAC ?p1_mac;
+                :hasIP ?p1_ip.
+
+            ?p2 :hasMAC ?p2_mac;
+                :hasIP ?p2_ip.
+
+            ?f a :Flow;
+                :hasInPort ?p1;
+                :hasDstAddr ?p2_ip;
+                :hasAction ?a.
+
+            ?a a :hasAction;
+                :hasType "output"^^xsd:String; # find the flows of the link that are still forwarding
+
+            bind (strafter(str(?p1), "http://home.eps.hw.ac.uk/~qz1/") as ?port1).
+            bind (strafter(str(?p2), "http://home.eps.hw.ac.uk/~qz1/") as ?port2).
+        }
+        """
+        result = self.store.query(qstr)
+        if len(result) == 0:
+            LOG.error("Failed to check flow consistency with links")
+            return None
+
+        port1, port2 = next(iter(result))
+        return (port1, port2)
 
     def add_path_state(self, src_mac, dst_mac):
         rq = """
