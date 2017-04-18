@@ -140,30 +140,158 @@ class SemanticWeb(app_manager.RyuApp):
         self.export_event.set()
         hub.joinall(self.threads)
 
+
+
+    @set_ev_cls(event.EventSwitchEnter)
+    def topo_switch_enter(self, ev):
+        g = Graph()
+        s = 's' + str(ev.switch.dp.id)
+        g.add( (self.ns[s], RDF.type, self.ns['Switch']) )
+        g.add( (self.ns[s], self.ns.hasName, Literal(s)) )
+        g.add( (self.ns[s], self.ns.hasID, Literal(ev.switch.dp.id))  )
+        for p in ev.switch.ports:
+            self._add_port_to_graph(g, ev.switch.dp.id, p)
+
+        self.backend.insert_tuples(g)
+
+    @set_ev_cls(event.EventSwitchLeave)
+    def topo_switch_leave(self, ev):
+        s = 's' + str(ev.switch.dp.id)
+        cmd = """
+        PREFIX of: <http://home.eps.hw.ac.uk/~qz1/>
+
+        delete {
+        of:%s ?sprop ?sval.
+        ?flid ?flprop ?flval
+        } where {
+        of:%s ?sprop ?sval.
+        ?flid of:isIn of:%s;
+        ?flprop ?flval
+        }
+        """ % (s, s, s)
+        self.backend.update(cmd)
+
+    def _add_port_to_graph(self, g, dpid, p):
+        s = 's' + str(dpid)
+        pid = s + "_port" + str(p.port_no)
+        g.add( (self.ns[s], self.ns.hasPort, self.ns[pid])  )
+        g.add( (self.ns[pid], RDF.type, self.ns['Port'])  )
+        g.add( (self.ns[pid], self.ns.isIn, self.ns[s]) )
+        g.add( (self.ns[pid], self.ns.hasName,    Literal(p.name))  )
+        g.add( (self.ns[pid], self.ns.hasMAC,  Literal(p.hw_addr))  )
+        g.add( (self.ns[pid], self.ns.port_no,    Literal(p.port_no))  )
+        g.add( (self.ns[pid], self.ns.isUP,    Literal(p.is_live())  ) )
+
+    @set_ev_cls(event.EventPortAdd)
+    def topo_port_add(self, ev):
+        g = Greaph()
+        self.add_port_to_graph(g, ev.port.dpid, ev.port)
+        self.backend.insert_tuples(g)
+        return
+
+    @set_ev_cls(event.EventPortModify)
+    def topo_port_modify(self, ev):
+        s = 'of:s' + str(ev.port.dpid)
+        pid = s + "_port" + str(ev.port.port_no)
+        cmd = """
+        PREFIX of: <http://home.eps.hw.ac.uk/~qz1/>
+        delete {%s of:isUP ?p}
+        insert {%s of:isUP %s}
+        where  {%s of:isUP ?p}
+        """ % (pid, pid, ev.port.is_live(), pid)
+        self.backend.update(cmd)
+
+        return
+
+    @set_ev_cls(event.EventLinkAdd)
+    def topo_link_add(self, ev):
+# TODO links have directionality. This state introduces a lot of redundancy
+        g = Graph()
+        sid = 's' + str(ev.link.src.dpid)
+        spid = sid + "_port" + str(ev.link.src.port_no)
+        did = 's' + str(ev.link.dst.dpid)
+        dpid = did + "_port" + str(ev.link.dst.port_no)
+        linkid = "link_" + spid + "_" + dpid
+        g.add( (self.ns[spid], self.ns.connectToPort,
+                self.ns[dpid])  )
+        g.add( (self.ns[dpid], self.ns.connectToPort,
+                self.ns[spid])  )
+        g.add( (self.ns[linkid], RDF.type, self.ns['Link'])  )
+        g.add( (self.ns[linkid], self.ns.hasSrcPort,
+                self.ns[spid])  )
+        g.add( (self.ns[linkid], self.ns.hasDstPort,
+                self.ns[dpid])  )
+
+#        g.add( (self.ns[linkid], self.ns.connectToPort,
+#                self.ns[spid])  )
+        self.backend.insert_tuples(g)
+        return
+
+    @set_ev_cls(event.EventLinkDelete)
+    def topo_link_remove(self, ev):
+        sid = 's' + str(ev.link.src.dpid)
+        spid = sid + "_port" + str(ev.link.src.port_no)
+        did = 's' + str(ev.link.dst.dpid)
+        dpid = did + "_port" + str(ev.link.dst.port_no)
+        linkid = "of:link_" + spid + "_" + dpid
+        cmd = """
+        PREFIX of: <http://home.eps.hw.ac.uk/~qz1/>
+        delete {
+          %s ?v ?p.
+          ?port1 of:connectToPort ?port2.
+        } where {
+            %s rdf:type of:Link;
+                  ?v ?p;
+                  of:hasSrcPort ?port1;
+                  of:hasDstPort ?port2.
+          FILTER(?port1!=?port2)
+        }
+        """ % (linkid, linkid)
+        self.backend.update(cmd)
+
+        return
+
+#    @set_ev_cls(event.EventHostAdd)
+    def topo_host_add(self, ev):
+        h = ev.host
+        g = Graph()
+        swid = 's' + str(h.port.dpid)
+        hid = swid + "_host_" + str(h.mac)
+        pid = swid + "_port" + str(h.port.port_no)
+        LOG.info("sw %s host %s %s", h.port.dpid, hid, h.mac)
+        g.add( (self.ns[hid], RDF.type, self.ns['Host'])  )
+        g.add( (self.ns[hid], self.ns.connectToPort, self.ns[pid]) )
+        g.add( (self.ns[pid], self.ns.connectToPort, self.ns[hid]) )
+        for ip in h.ipv4:
+            g.add( (self.ns[hid], self.ns.hasIPv4, Literal(ip)) )
+        g.add( (self.ns[hid], self.ns.hasMAC,  Literal(h.mac)) )
+        self.backend.insert_tuples(g)
+        return
+
     def export_loop(self):
         while self.is_active:
             self.export_event.clear()
             LOG.debug("periodic event fired!")
             g = Graph()
-#            try:
-            sws = self.get_switches()
-            for sw in sws:
-                s = 's' + str(sw.dp.id)
-                g.add( (self.ns[s], RDF.type, self.ns['Switch']) )
-                g.add( (self.ns[s], self.ns.hasName, Literal(s)) )
-                g.add( (self.ns[s], self.ns.hasID, Literal(sw.dp.id))  )
-
-                for p in sw.ports:
-#                     LOG.info(str(p.state))
-                    pid = s + "_port" + str(p.port_no)
-                    g.add( (self.ns[s], self.ns.hasPort, self.ns[pid])  )
-                    g.add( (self.ns[pid], RDF.type, self.ns['Port'])  )
-                    g.add( (self.ns[pid], self.ns.isIn, self.ns[s]) )
-                    g.add( (self.ns[pid], self.ns.hasName,    Literal(p.name))  )
-                    g.add( (self.ns[pid], self.ns.hasMAC,  Literal(p.hw_addr))  )
-                    g.add( (self.ns[pid], self.ns.port_no,    Literal(p.port_no))  )
-                    g.add( (self.ns[pid], self.ns.port_no,    Literal(p.port_no))  )
-                    g.add( (self.ns[pid], self.ns.isUP,    Literal(p.is_live())  ) )
+##            try:
+#            sws = self.get_switches()
+#            for sw in sws:
+#                s = 's' + str(sw.dp.id)
+#                g.add( (self.ns[s], RDF.type, self.ns['Switch']) )
+#                g.add( (self.ns[s], self.ns.hasName, Literal(s)) )
+#                g.add( (self.ns[s], self.ns.hasID, Literal(sw.dp.id))  )
+#
+#                for p in sw.ports:
+##                     LOG.info(str(p.state))
+#                    pid = s + "_port" + str(p.port_no)
+#                    g.add( (self.ns[s], self.ns.hasPort, self.ns[pid])  )
+#                    g.add( (self.ns[pid], RDF.type, self.ns['Port'])  )
+#                    g.add( (self.ns[pid], self.ns.isIn, self.ns[s]) )
+#                    g.add( (self.ns[pid], self.ns.hasName,    Literal(p.name))  )
+#                    g.add( (self.ns[pid], self.ns.hasMAC,  Literal(p.hw_addr))  )
+#                    g.add( (self.ns[pid], self.ns.port_no,    Literal(p.port_no))  )
+#                    g.add( (self.ns[pid], self.ns.port_no,    Literal(p.port_no))  )
+#                    g.add( (self.ns[pid], self.ns.isUP,    Literal(p.is_live())  ) )
 
             hosts = self.get_hosts()
             hid_gen = 0
@@ -174,7 +302,7 @@ class SemanticWeb(app_manager.RyuApp):
                 pid = swid + "_port" + str(h.port.port_no)
                 LOG.debug("sw %s host %s %s", h.port.dpid, hid, h.mac)
                 g.add( (self.ns[hid], RDF.type, self.ns['Host'])  )
-                g.add( (self.ns[swid], self.ns.hasHost, self.ns[hid]) )
+#                 g.add( (self.ns[swid], self.ns.hasHost, self.ns[hid]) )
 
                 g.add( (self.ns[hid], self.ns.connectToPort, self.ns[pid]) )
                 g.add( (self.ns[pid], self.ns.connectToPort, self.ns[hid]) )
@@ -182,16 +310,16 @@ class SemanticWeb(app_manager.RyuApp):
                     g.add( (self.ns[hid], self.ns.hasIPv4, Literal(ip)) )
                 g.add( (self.ns[hid], self.ns.hasMAC,  Literal(h.mac)) )
 
-            links = self.get_links()
-            for link in links:
-                sid = 's' + str(link.src.dpid)
-                spid = sid + "_port" + str(link.src.port_no)
-                did = 's' + str(link.dst.dpid)
-                dpid = did + "_port" + str(link.dst.port_no)
-                g.add( (self.ns[spid], self.ns.connectToPort,
-                             self.ns[dpid])  )
-                g.add( (self.ns[dpid], self.ns.connectToPort,
-                             self.ns[spid])  )
+#            links = self.get_links()
+#            for link in links:
+#                sid = 's' + str(link.src.dpid)
+#                spid = sid + "_port" + str(link.src.port_no)
+#                did = 's' + str(link.dst.dpid)
+#                dpid = did + "_port" + str(link.dst.port_no)
+#                g.add( (self.ns[spid], self.ns.connectToPort,
+#                             self.ns[dpid])  )
+#                g.add( (self.ns[dpid], self.ns.connectToPort,
+#                             self.ns[spid])  )
 
 #            flows = self.get_flows()
 #
