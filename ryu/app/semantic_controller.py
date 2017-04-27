@@ -32,8 +32,6 @@ from ryu.topology import event, switches
 from rdflib import Graph, Namespace, Literal
 from rdflib.namespace import RDF
 
-import json
-
 LOG = logging.getLogger("SemanticWeb")
 
 class SemanticWeb(app_manager.RyuApp):
@@ -59,7 +57,6 @@ class SemanticWeb(app_manager.RyuApp):
         self.path = kwargs["pathComputation"]
         self.path.set_backend(self.backend, self.flowManager)
         self.dps = {}
-        self.flow_count = 1
         self.ns = Namespace('http://home.eps.hw.ac.uk/~qz1/')
 
     @set_ev_cls(dpset.EventDP, dpset.DPSET_EV_DISPATCHER)
@@ -87,7 +84,6 @@ class SemanticWeb(app_manager.RyuApp):
         msg = ev.msg
 
         datapath = msg.datapath
-        dpid = datapath.id
         port_no = msg.match['in_port']
 
         # check if packet is ARP in order to respond with a packet out message
@@ -135,13 +131,6 @@ class SemanticWeb(app_manager.RyuApp):
                                   data=p.data)
         datapath.send_msg(out)
 
-    def close(self):
-        self.is_active = False
-        self.export_event.set()
-        hub.joinall(self.threads)
-
-
-
     @set_ev_cls(event.EventSwitchEnter)
     def topo_switch_enter(self, ev):
         g = Graph()
@@ -184,7 +173,7 @@ class SemanticWeb(app_manager.RyuApp):
 
     @set_ev_cls(event.EventPortAdd)
     def topo_port_add(self, ev):
-        g = Greaph()
+        g = Graph()
         self.add_port_to_graph(g, ev.port.dpid, ev.port)
         self.backend.insert_tuples(g)
         return
@@ -214,14 +203,13 @@ class SemanticWeb(app_manager.RyuApp):
         linkid = "link_" + spid + "_" + dpid
         g.add( (self.ns[spid], self.ns.connectToPort,
                 self.ns[dpid])  )
-        g.add( (self.ns[dpid], self.ns.connectToPort,
-                self.ns[spid])  )
+#        g.add( (self.ns[dpid], self.ns.connectToPort,
+#                self.ns[spid])  )
         g.add( (self.ns[linkid], RDF.type, self.ns['Link'])  )
         g.add( (self.ns[linkid], self.ns.hasSrcPort,
                 self.ns[spid])  )
         g.add( (self.ns[linkid], self.ns.hasDstPort,
                 self.ns[dpid])  )
-
 #        g.add( (self.ns[linkid], self.ns.connectToPort,
 #                self.ns[spid])  )
         self.backend.insert_tuples(g)
@@ -273,26 +261,6 @@ class SemanticWeb(app_manager.RyuApp):
             self.export_event.clear()
 #           LOG.debug("periodic event fired!")
             g = Graph()
-##            try:
-#            sws = self.get_switches()
-#            for sw in sws:
-#                s = 's' + str(sw.dp.id)
-#                g.add( (self.ns[s], RDF.type, self.ns['Switch']) )
-#                g.add( (self.ns[s], self.ns.hasName, Literal(s)) )
-#                g.add( (self.ns[s], self.ns.hasID, Literal(sw.dp.id))  )
-#
-#                for p in sw.ports:
-##                     LOG.info(str(p.state))
-#                    pid = s + "_port" + str(p.port_no)
-#                    g.add( (self.ns[s], self.ns.hasPort, self.ns[pid])  )
-#                    g.add( (self.ns[pid], RDF.type, self.ns['Port'])  )
-#                    g.add( (self.ns[pid], self.ns.isIn, self.ns[s]) )
-#                    g.add( (self.ns[pid], self.ns.hasName,    Literal(p.name))  )
-#                    g.add( (self.ns[pid], self.ns.hasMAC,  Literal(p.hw_addr))  )
-#                    g.add( (self.ns[pid], self.ns.port_no,    Literal(p.port_no))  )
-#                    g.add( (self.ns[pid], self.ns.port_no,    Literal(p.port_no))  )
-#                    g.add( (self.ns[pid], self.ns.isUP,    Literal(p.is_live())  ) )
-
             hosts = self.get_hosts()
             hid_gen = 0
             for h in hosts:
@@ -310,65 +278,15 @@ class SemanticWeb(app_manager.RyuApp):
                     g.add( (self.ns[hid], self.ns.hasIPv4, Literal(ip)) )
                 g.add( (self.ns[hid], self.ns.hasMAC,  Literal(h.mac)) )
 
-#            links = self.get_links()
-#            for link in links:
-#                sid = 's' + str(link.src.dpid)
-#                spid = sid + "_port" + str(link.src.port_no)
-#                did = 's' + str(link.dst.dpid)
-#                dpid = did + "_port" + str(link.dst.port_no)
-#                g.add( (self.ns[spid], self.ns.connectToPort,
-#                             self.ns[dpid])  )
-#                g.add( (self.ns[dpid], self.ns.connectToPort,
-#                             self.ns[spid])  )
-
-#            flows = self.get_flows()
-#
-#            flow_count = 0
-#            for dpid in flows.keys():
-#                for flow in flows[dpid]:
-#                    sid = 's' + str(dpid)
-#                    flid = 's' + str(dpid) + '_flow' + str(flow_count)
-#                    g.add( (ns[sid], ns.hasFlow, ns[flid]) )
-#                    g.add( (ns[flid], RDF.type, ns['Flow']) )
-#                    g.add( (ns[flid], ns.priority,     Literal(flow.priority)) )
-#                    g.add( (ns[flid], ns.hard_timeout, Literal(flow.hard_timeout)) )
-#                    g.add( (ns[flid], ns.byte_count,   Literal(flow.byte_count)) )
-#                    g.add( (ns[flid], ns.duration_sec, Literal(flow.duration_sec)) )
-#                    g.add( (ns[flid], ns.length,       Literal(flow.length)) )
-#                    g.add( (ns[flid], ns.flags,        Literal(flow.flags)) )
-#                    g.add( (ns[flid], ns.table_id,     Literal(flow.table_id)) )
-#                    g.add( (ns[flid], ns.cookie,       Literal(flow.cookie)) )
-#                    g.add( (ns[flid], ns.packet_count, Literal(flow.packet_count)) )
-#                    g.add( (ns[flid], ns.idle_timeout, Literal(flow.idle_timeout)) )
-#
-#                    for (field, val) in flow.match.iteritems():
-#                        g.add( (ns[flid], ns['has'+field], Literal(val) ) )
-#
-#                    action_count = 0
-#                    for inst in flow.instructions:
-#                        for action in inst.actions:
-#                            actid = flid + '_action' + str(action_count)
-#                            g.add( (ns[flid], ns.hasAction, ns[actid]) )
-#                            if action.type == 0:
-#                                g.add( (ns[actid], RDF.type, ns['ActionOutput']) )
-#                                g.add( (ns[actid], ns.toPort, Literal(action.port)   ) )
-#                            action_count = action_count + 1
-#                    flow_count = flow_count + 1
-
             # rep = self.send_request(EventInsertTuples(g))i
             self.backend.insert_tuples(g)
             self.export_event.wait(timeout=self.TIMEOUT_CHECK_PERIOD)
 
-    def get_switches(self):
-        rep = self.send_request(event.EventSwitchRequest(None))
-        return rep.switches
+    def close(self):
+        self.is_active = False
+        self.export_event.set()
+        hub.joinall(self.threads)
 
     def get_hosts(self):
         rep = self.send_request(event.EventHostRequest(None))
         return rep.hosts
-
-    def get_links(self):
-        rep = self.send_request(event.EventLinkRequest(None))
-        return rep.links
-
-
