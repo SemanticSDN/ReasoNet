@@ -440,7 +440,7 @@ class AppManager(object):
         for key, cls in self.contexts_cls.items():
             if issubclass(cls, RyuApp):
                 # hack for dpset
-                context = self._instantiate(None, cls)
+                context = self._instantiate(None, cls, **self.contexts)
             else:
                 context = cls()
             LOG.info('creating context %s', key)
