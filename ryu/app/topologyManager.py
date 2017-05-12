@@ -17,15 +17,12 @@ import logging
 
 from ryu.base import app_manager
 from ryu.controller import ofp_event
-from ryu.controller.handler import CONFIG_DISPATCHER, MAIN_DISPATCHER
+from ryu.controller.handler import CONFIG_DISPATCHER
 from ryu.controller.handler import set_ev_cls
-from ryu.ofproto import ofproto_v1_3
 from ryu.controller import dpset
 
 from ryu.app.stardogBackend import StardogBackend
 from ryu.app.flowManager import FlowManager
-from ryu.lib.packet import ethernet, arp, packet
-from ryu.lib.packet.ether_types import ETH_TYPE_ARP, ETH_TYPE_IP
 from ryu.lib import hub
 from ryu.topology import event, switches
 from rdflib import Graph, Namespace, Literal
@@ -34,9 +31,7 @@ from rdflib.namespace import RDF
 
 LOG = logging.getLogger("PathManager")
 
-class PathManager(app_manager.RyuApp):
-    OFP_VERSIONS = [ofproto_v1_3.OFP_VERSION]
-
+class TopologyManager(app_manager.RyuApp):
     _CONTEXTS = {
         'switches': switches.Switches,
         'backend': StardogBackend,
@@ -44,7 +39,7 @@ class PathManager(app_manager.RyuApp):
     }
 
     def __init__(self, *args, **kwargs):
-        super(PathManager, self).__init__(*args, **kwargs)
+        super(TopologyManager, self).__init__(*args, **kwargs)
         self.export_event = hub.Event()
         self.threads.append(hub.spawn(self.export_loop))
         self.is_active = True
@@ -52,7 +47,6 @@ class PathManager(app_manager.RyuApp):
         self.topo = kwargs["switches"]
         self.backend = kwargs["backend"]
         self.flowManager = kwargs["flowManager"]
-        self.flowManager.set_backend(self.backend)
         self.dps = {}
         self.ns = Namespace('http://home.eps.hw.ac.uk/~qz1/')
 
@@ -70,10 +64,8 @@ class PathManager(app_manager.RyuApp):
         parser = datapath.ofproto_parser
 
         # install the table-miss flow entry.
-        match = parser.OFPMatch()
-        actions = [parser.OFPActionOutput(ofproto.OFPP_CONTROLLER,
-                                          ofproto.OFPCML_NO_BUFFER)]
-        self.flowManager.add_flow(datapath, 0, match, actions, datapath.ofproto.OFPCML_NO_BUFFER)
+        ofproto = datapath.ofproto
+        self.flowManager.add_flow(datapath, priority=0, output=ofproto.OFPP_CONTROLLER)
 
     @set_ev_cls(event.EventSwitchEnter)
     def topo_switch_enter(self, ev):
@@ -101,8 +93,8 @@ class PathManager(app_manager.RyuApp):
         g.add( (self.ns[pid], self.ns.hasMAC,  Literal(p.hw_addr))  )
         g.add( (self.ns[pid], self.ns.port_no,    Literal(p.port_no))  )
         g.add( (self.ns[pid], self.ns.isUP,    Literal(p.is_live())  ) )
-        g.add( (self.ns[pid], self.ns.hasBW, Literal(1000000000) ) )
-        g.add( (self.ns[pid], self.ns.usesBW, Literal(0) ) )
+        g.add( (self.ns[pid], self.ns.hasCapacity, Literal(1000000000) ) )
+        g.add( (self.ns[pid], self.ns.hasLoad, Literal(0) ) )
 
     @set_ev_cls(event.EventPortAdd)
     def topo_port_add(self, ev):
@@ -144,7 +136,11 @@ class PathManager(app_manager.RyuApp):
                 self.ns[spid])  )
         g.add( (self.ns[linkid], self.ns.hasDstPort,
                 self.ns[dpid])  )
-#        g.add( (self.ns[linkid], self.ns.connectToPort,
+        g.add( (self.ns[linkid], self.ns.isEnabled, Literal(True))  )
+        g.add( (self.ns[linkid], self.ns.hasCapacity, Literal(1000000000) ) )
+        g.add( (self.ns[linkid], self.ns.hasLoad, Literal(0) ) )
+
+##        g.add( (self.ns[linkid], self.ns.connectToPort,
 #                self.ns[spid])  )
         self.backend.insert_tuples(g)
         return
@@ -156,19 +152,22 @@ class PathManager(app_manager.RyuApp):
         did = 's' + str(ev.link.dst.dpid)
         dpid = did + "_port" + str(ev.link.dst.port_no)
         linkid = "of:link_" + spid + "_" + dpid
+        LOG.info("link %s was removed"%(linkid))
         cmd = """
         PREFIX of: <http://home.eps.hw.ac.uk/~qz1/>
         delete {
-          %s ?v ?p.
-          ?port1 of:connectToPort ?port2.
-        } where {
+            %s of:isEnabled True.
+            ?port1 of:connectToPort ?port2.
+        }
+        insert {%s of:isEnabled False.}
+        where {
             %s rdf:type of:Link;
                   ?v ?p;
-                  of:hasSrcPort ?port1;
+                  of:dhasSrcPort ?port1;
                   of:hasDstPort ?port2.
           FILTER(?port1!=?port2)
         }
-        """ % (linkid, linkid)
+        """ % (linkid, linkid, linkid)
         self.backend.update(cmd)
 
         return
