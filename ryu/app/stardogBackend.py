@@ -16,9 +16,6 @@
 import logging
 
 from ryu.base import app_manager
-from ryu.topology import switches
-from ryu.controller import event
-from ryu.ofproto import ofproto_v1_3
 
 from rdflib import Graph, URIRef
 
@@ -29,38 +26,12 @@ from os import system
 
 LOG = logging.getLogger("StardogBackend")
 
-class EventInsertTuples(event.EventRequestBase):
-    def __init__(self, g):
-        super(EventInsertTuples, self).__init__()
-        self.dst = 'stardogBackend'
-        self.g = g
-
-    def __str__(self):
-        return 'EventInsertTuples<%s>' % (str(self.g.serialize(format='nt')))
-
-class EventInsertTuplesReply(event.EventReplyBase):
-    def __init__(self, dst, result):
-        super(EventInsertTuplesReply, self).__init__(dst)
-        self.result = result
-
-    def __str__(self):
-        return ("EventInsertTuplesReply<dst=%s,%s>" %
-                (self.dst, self.result))
-
 class StardogBackend(app_manager.RyuApp):
-    OFP_VERSIONS = [ofproto_v1_3.OFP_VERSION]
-
-   # _EVENTS = [EventInsertTuples]
-
-    _CONTEXTS = {
-        'switches': switches.Switches
-    }
-
     def __init__(self, *args, **kwargs):
         super(StardogBackend, self).__init__(*args, **kwargs)
         self.name = 'stardogBackend'
-        self.db = "test-arsham"
-        self.endpoint = 'http://172.18.2.106:5820/%s/query'%(self.db)
+        self.db = "test-haris"
+        self.endpoint = 'http://10.30.65.148:5820/%s/query'%(self.db)
         self.store = sparqlstore.SPARQLUpdateStore()
         self.store.open((self.endpoint, self.endpoint))
         self.store.setCredentials('admin', 'admin')
@@ -69,10 +40,10 @@ class StardogBackend(app_manager.RyuApp):
         self.ng = Graph(self.store, identifier=self.default_graph)
 
         # Dirty hack to cleat the db upon restart
-        system('curl -X POST -d "query=CLEAR ALL" "http://admin:admin@172.18.2.106:5820/%s/query"'%(self.db))
+        system('curl -X POST -d "query=CLEAR ALL" "http://admin:admin@10.30.65.148:5820/%s/query"'%(self.db))
 
         g = Graph()
-        g.parse("/home/ubuntu/ryu-haris/ryu/app/my_constraints.ttl", format="n3")
+        g.parse("/home/ubuntu/ryu-haris/ryu/app/sardonic-v3.ttl", format="n3")
         self.insert_tuples(g)
         return
 
@@ -95,6 +66,23 @@ class StardogBackend(app_manager.RyuApp):
 #        rep = EventInsertTuplesReply(ev.src, res)
 #        self.reply_to_request(ev, rep)
 #        return
+
+    def remove_switch(self, id):
+        cmd = """
+        PREFIX of: <http://home.eps.hw.ac.uk/~qz1/>
+
+        delete {
+        of:%s ?sprop ?sval.
+        ?flid ?flprop ?flval
+        } where {
+        of:%s ?sprop ?sval.
+        ?flid of:isIn of:%s;
+        ?flprop ?flval
+        }
+        """ % (id, id, id)
+        self.store.update(cmd)
+        return self.store.commit()
+
 
     def get_mac_of_host(self, ip):
         # run a query to get MAC address
@@ -163,16 +151,47 @@ class StardogBackend(app_manager.RyuApp):
         insert {
             of:path_%s_%s a of:Path;
             of:hasSrc ?host1;
-            of:hasDst ?host2
+            of:hasDst ?host2;
+            of:hasActive of:path_%s_%s_1.
         }
         where {
             ?host1 a of:Host; of:hasMAC "%s".
             ?host2 a of:Host; of:hasMAC "%s".
         }
-        """ % (src_mac, dst_mac, src_mac, dst_mac)
+        """ % (src_mac, dst_mac, src_mac, dst_mac, src_mac, dst_mac)
         res = self.store.update(rq)
 
         return res
+
+    def check_path_exists(self, src_mac, dst_mac):
+        rq = """
+        PREFIX of: <http://home.eps.hw.ac.uk/~qz1/>
+
+        ask {
+        {
+            ?path a of:Path;
+                of:hasSrc ?host1;
+                of:hasDst ?host2.
+            ?host1 a of:Host;
+                of:hasMAC "%s".
+            ?host2 a of:Host;
+                of:hasMAC "%s".
+        }
+        UNION
+        {
+            ?path a of:Path;
+                of:hasSrc ?host1;
+                of:hasDst ?host2.
+            ?host1 a of:Host;
+                of:hasMAC "%s".
+            ?host2 a of:Host;
+                of:hasMAC "%s".
+                }
+        }
+        """ % (src_mac, dst_mac, dst_mac, src_mac)
+        res = self.store.query(rq)
+        return bool(res)
+
 
     def add_path_flow_state(self, id, dpid, priority, match, actions, hopCount, pathid):
         g = Graph()
@@ -197,15 +216,15 @@ class StardogBackend(app_manager.RyuApp):
         action_count = 0
         for action in actions:
             actid = flid + '_action' + str(action_count)
-            pid = sid + "_port" + str(action.port)
             g.add( (self.ns[flid], self.ns.hasAction, self.ns[actid]) )
             if action.type == 0:
+                pid = sid + "_port" + str(action.port)
                 g.add( (self.ns[actid], RDF.type, self.ns['ActionOutput']) )
                 g.add( (self.ns[actid], self.ns.toPort, self.ns[pid] ) )
                 action_count = action_count + 1
+#            elif action.type ==
 
         self.insert_tuples(g)
-
 
     def add_flow_state(self, id, dpid, priority, match, actions):
 
