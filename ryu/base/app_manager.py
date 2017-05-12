@@ -29,6 +29,7 @@ import logging
 import sys
 import os
 import gc
+from collections import OrderedDict
 
 from ryu import cfg
 from ryu import utils
@@ -437,7 +438,9 @@ class AppManager(object):
                                   if s not in app_lists])
 
     def create_contexts(self):
-        for key, cls in self.contexts_cls.items():
+        tmp = OrderedDict(sorted(self.contexts_cls.items(), key=lambda t: t[0]))
+        for key, cls in tmp.items():
+            print(key)
             if issubclass(cls, RyuApp):
                 # hack for dpset
                 context = self._instantiate(None, cls, **self.contexts)
