@@ -1,0 +1,1440 @@
+@prefix : <http://home.eps.hw.ac.uk/~qz1/> .
+@prefix of: <http://home.eps.hw.ac.uk/~qz1/> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xml: <http://www.w3.org/XML/1998/namespace> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix stardog: <tag:stardog:api:> .
+@base <http://home.eps.hw.ac.uk/~qz1/> .
+
+<http://home.eps.hw.ac.uk/~qz1/> rdf:type owl:Ontology .
+
+#################################################################
+#    Object Properties
+#################################################################
+
+###  http://home.eps.hw.ac.uk/~qz1/belongs
+of:belongs rdf:type owl:ObjectProperty ;
+           rdfs:domain of:PathHop ;
+           rdfs:range of:AvailPath .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/connectToPort
+of:connectToPort rdf:type owl:ObjectProperty ;
+                 rdfs:domain of:Port ;
+                 rdfs:range of:Port .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/hasAction
+of:hasAction rdf:type owl:ObjectProperty ;
+             rdfs:domain of:Flow ;
+             rdfs:range of:Action .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/hasActive
+of:hasActive rdf:type owl:ObjectProperty ,
+                      owl:FunctionalProperty ;
+             rdfs:domain of:Path ;
+             rdfs:range of:AvailPath .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/hasDst
+of:hasDst rdf:type owl:ObjectProperty ;
+          rdfs:domain [ rdf:type owl:Class ;
+                        owl:unionOf ( of:Path
+                                      of:PathFlow
+                                    )
+                      ] ;
+          rdfs:range [ rdf:type owl:Class ;
+                       owl:unionOf ( of:Host
+                                     of:Switch
+                                   )
+                     ] .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/hasDstPort
+of:hasDstPort rdf:type owl:ObjectProperty ,
+                       owl:FunctionalProperty ;
+              rdfs:domain of:Link ;
+              rdfs:range of:Port .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/hasFlow
+of:hasFlow rdf:type owl:ObjectProperty ;
+           rdfs:domain [ rdf:type owl:Class ;
+                         owl:unionOf ( of:Flow
+                                       of:Switch
+                                     )
+                       ] ;
+           rdfs:range of:PathFlow .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/hasLink
+of:hasLink rdf:type owl:ObjectProperty ;
+           rdfs:domain of:PathHop ;
+           rdfs:range of:Link .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/hasPath
+of:hasPath rdf:type owl:ObjectProperty ;
+           rdfs:domain of:Queue ;
+           rdfs:range of:Path .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/hasPort
+of:hasPort rdf:type owl:ObjectProperty ;
+           rdfs:domain of:Switch ;
+           rdfs:range of:Port .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/hasQueue
+of:hasQueue rdf:type owl:ObjectProperty ,
+                     owl:InverseFunctionalProperty ;
+            rdfs:domain of:Port ;
+            rdfs:range of:Queue .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/hasSrc
+of:hasSrc rdf:type owl:ObjectProperty ;
+          rdfs:domain of:Path ;
+          rdfs:range [ rdf:type owl:Class ;
+                       owl:unionOf ( of:Host
+                                     of:Switch
+                                   )
+                     ] .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/hasSrcPort
+of:hasSrcPort rdf:type owl:ObjectProperty ,
+                       owl:FunctionalProperty ;
+              rdfs:domain of:Link ;
+              rdfs:range of:Port .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/isIn
+of:isIn rdf:type owl:ObjectProperty ;
+        rdfs:domain of:Port ;
+        rdfs:range of:Switch .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/realizes
+of:realizes rdf:type owl:ObjectProperty ,
+                     owl:FunctionalProperty ;
+            rdfs:domain of:AvailPath ;
+            rdfs:range of:Path .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/toPort
+of:toPort rdf:type owl:ObjectProperty ;
+          rdfs:domain of:Action ;
+          rdfs:range of:Port .
+
+
+#################################################################
+#    Data properties
+#################################################################
+
+###  http://home.eps.hw.ac.uk/~qz1/arp_op
+of:arp_op rdf:type owl:DatatypeProperty ,
+                   owl:FunctionalProperty ;
+          rdfs:domain of:Flow .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/arp_sha
+of:arp_sha rdf:type owl:DatatypeProperty ,
+                    owl:FunctionalProperty ;
+           rdfs:domain of:Flow .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/arp_spa
+of:arp_spa rdf:type owl:DatatypeProperty ,
+                    owl:FunctionalProperty ;
+           rdfs:domain of:Flow .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/arp_tha
+of:arp_tha rdf:type owl:DatatypeProperty ,
+                    owl:FunctionalProperty ;
+           rdfs:domain of:Flow .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/arp_tpa
+of:arp_tpa rdf:type owl:DatatypeProperty ,
+                    owl:FunctionalProperty ;
+           rdfs:domain of:Flow .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/cookie
+of:cookie rdf:type owl:DatatypeProperty ,
+                   owl:FunctionalProperty ;
+          rdfs:domain of:Flow .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/eth_dst
+of:eth_dst rdf:type owl:DatatypeProperty ;
+           rdfs:domain of:Flow .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/eth_src
+of:eth_src rdf:type owl:DatatypeProperty ;
+           rdfs:domain of:Flow .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/eth_type
+of:eth_type rdf:type owl:DatatypeProperty ;
+            rdfs:domain of:Flow .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/flags
+of:flags rdf:type owl:DatatypeProperty ;
+         rdfs:domain of:Flow .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/hard_timeout
+of:hard_timeout rdf:type owl:DatatypeProperty ;
+                rdfs:domain of:Flow .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/hasBW
+of:hasBW rdf:type owl:DatatypeProperty ,
+                  owl:FunctionalProperty ;
+         rdfs:domain of:Queue ;
+         rdfs:range xsd:long .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/hasCapacity
+of:hasCapacity rdf:type owl:DatatypeProperty ,
+                        owl:FunctionalProperty ;
+               rdfs:domain [ rdf:type owl:Class ;
+                             owl:unionOf ( of:Link
+                                           of:Port
+                                         )
+                           ] ;
+               rdfs:range xsd:long .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/hasIX
+of:hasIX rdf:type owl:DatatypeProperty ,
+                  owl:FunctionalProperty ;
+         rdfs:domain of:PathHop ;
+         rdfs:range xsd:int .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/hasLoad
+of:hasLoad rdf:type owl:DatatypeProperty ,
+                    owl:FunctionalProperty ;
+           rdfs:domain [ rdf:type owl:Class ;
+                         owl:unionOf ( of:Link
+                                       of:Port
+                                     )
+                       ] ;
+           rdfs:range xsd:long .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/hasState
+of:hasState rdf:type owl:DatatypeProperty ,
+                     owl:FunctionalProperty ;
+            rdfs:domain [ rdf:type owl:Class ;
+                          owl:unionOf ( of:AvailPath
+                                        of:Path
+                                      )
+                        ] .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/hasType
+of:hasType rdf:type owl:DatatypeProperty ;
+           rdfs:domain of:Action .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/icmpv4_code
+of:icmpv4_code rdf:type owl:DatatypeProperty ;
+               rdfs:domain of:Flow .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/icmpv4_type
+of:icmpv4_type rdf:type owl:DatatypeProperty ;
+               rdfs:domain of:Flow .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/icmpv6_code
+of:icmpv6_code rdf:type owl:DatatypeProperty ;
+               rdfs:domain of:Flow .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/icmpv6_type
+of:icmpv6_type rdf:type owl:DatatypeProperty ;
+               rdfs:domain of:Flow .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/idle_timeout
+of:idle_timeout rdf:type owl:DatatypeProperty ;
+                rdfs:domain of:Flow .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/in_phy_port
+of:in_phy_port rdf:type owl:DatatypeProperty ;
+               rdfs:domain of:Flow .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/in_port
+of:in_port rdf:type owl:DatatypeProperty ;
+           rdfs:domain of:Flow .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/ip_dscp
+of:ip_dscp rdf:type owl:DatatypeProperty ;
+           rdfs:domain of:Flow .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/ip_ecn
+of:ip_ecn rdf:type owl:DatatypeProperty ;
+          rdfs:domain of:Flow .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/ip_proto
+of:ip_proto rdf:type owl:DatatypeProperty ;
+            rdfs:domain of:Flow .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/ipv4_dst
+of:ipv4_dst rdf:type owl:DatatypeProperty ;
+            rdfs:domain of:Flow .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/ipv4_src
+of:ipv4_src rdf:type owl:DatatypeProperty ;
+            rdfs:domain of:Flow .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/ipv6_dst
+of:ipv6_dst rdf:type owl:DatatypeProperty ;
+            rdfs:domain of:Flow .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/ipv6_exthdr
+of:ipv6_exthdr rdf:type owl:DatatypeProperty ;
+               rdfs:domain of:Flow .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/ipv6_flabel
+of:ipv6_flabel rdf:type owl:DatatypeProperty ;
+               rdfs:domain of:Flow .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/ipv6_nd_sll
+of:ipv6_nd_sll rdf:type owl:DatatypeProperty ;
+               rdfs:domain of:Flow .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/ipv6_nd_target
+of:ipv6_nd_target rdf:type owl:DatatypeProperty ;
+                  rdfs:domain of:Flow .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/ipv6_nd_tll
+of:ipv6_nd_tll rdf:type owl:DatatypeProperty ;
+               rdfs:domain of:Flow .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/ipv6_src
+of:ipv6_src rdf:type owl:DatatypeProperty ;
+            rdfs:domain of:Flow .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/isEnabled
+of:isEnabled rdf:type owl:DatatypeProperty ,
+                      owl:FunctionalProperty ;
+             rdfs:domain of:Link ;
+             rdfs:range xsd:boolean .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/metadata
+of:metadata rdf:type owl:DatatypeProperty ;
+            rdfs:domain of:Flow .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/mpls_bos
+of:mpls_bos rdf:type owl:DatatypeProperty ;
+            rdfs:domain of:Flow .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/mpls_label
+of:mpls_label rdf:type owl:DatatypeProperty ;
+              rdfs:domain of:Flow .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/mpls_tc
+of:mpls_tc rdf:type owl:DatatypeProperty ;
+           rdfs:domain of:Flow .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/pbb_isid
+of:pbb_isid rdf:type owl:DatatypeProperty ;
+            rdfs:domain of:Flow .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/pbb_uca
+of:pbb_uca rdf:type owl:DatatypeProperty ;
+           rdfs:domain of:Flow .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/sctp_dst
+of:sctp_dst rdf:type owl:DatatypeProperty ;
+            rdfs:domain of:Flow .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/sctp_src
+of:sctp_src rdf:type owl:DatatypeProperty ;
+            rdfs:domain of:Flow .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/table_id
+of:table_id rdf:type owl:DatatypeProperty ;
+            rdfs:domain of:Flow .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/tcp_dst
+of:tcp_dst rdf:type owl:DatatypeProperty ;
+           rdfs:domain of:Flow .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/tcp_flags
+of:tcp_flags rdf:type owl:DatatypeProperty ;
+             rdfs:domain of:Flow .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/tcp_src
+of:tcp_src rdf:type owl:DatatypeProperty ;
+           rdfs:domain of:Flow .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/tunnel_id
+of:tunnel_id rdf:type owl:DatatypeProperty ;
+             rdfs:domain of:Flow .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/udp_dst
+of:udp_dst rdf:type owl:DatatypeProperty ;
+           rdfs:domain of:Flow .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/udp_src
+of:udp_src rdf:type owl:DatatypeProperty ;
+           rdfs:domain of:Flow .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/vlan_pcp
+of:vlan_pcp rdf:type owl:DatatypeProperty ;
+            rdfs:domain of:Flow .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/vlan_vid
+of:vlan_vid rdf:type owl:DatatypeProperty ;
+            rdfs:domain of:Flow .
+
+
+###  http://www.co-ode.org/ontologies/ont.owl#hasID
+<http://www.co-ode.org/ontologies/ont.owl#hasID> rdf:type owl:DatatypeProperty ,
+                                                          owl:FunctionalProperty ;
+                                                 rdfs:domain of:Switch ;
+                                                 rdfs:range xsd:long .
+
+
+###  http://www.co-ode.org/ontologies/ont.owl#hasIPv4
+<http://www.co-ode.org/ontologies/ont.owl#hasIPv4> rdf:type owl:DatatypeProperty ,
+                                                            owl:FunctionalProperty ;
+                                                   rdfs:domain of:Host ;
+                                                   rdfs:range xsd:string .
+
+
+###  http://www.co-ode.org/ontologies/ont.owl#hasMAC
+<http://www.co-ode.org/ontologies/ont.owl#hasMAC> rdf:type owl:DatatypeProperty ;
+                                                  rdfs:domain [ rdf:type owl:Class ;
+                                                                owl:unionOf ( of:Host
+                                                                              of:Port
+                                                                            )
+                                                              ] ;
+                                                  rdfs:range xsd:string .
+
+
+###  http://www.co-ode.org/ontologies/ont.owl#hasName
+<http://www.co-ode.org/ontologies/ont.owl#hasName> rdf:type owl:DatatypeProperty ;
+                                                   rdfs:domain [ rdf:type owl:Class ;
+                                                                 owl:unionOf ( of:Port
+                                                                               of:Switch
+                                                                             )
+                                                               ] ;
+                                                   rdfs:range xsd:string .
+
+
+###  http://www.co-ode.org/ontologies/ont.owl#hopCount
+<http://www.co-ode.org/ontologies/ont.owl#hopCount> rdf:type owl:DatatypeProperty ;
+                                                    rdfs:domain of:PathFlow ;
+                                                    rdfs:range xsd:int .
+
+
+###  http://www.co-ode.org/ontologies/ont.owl#isUp
+<http://www.co-ode.org/ontologies/ont.owl#isUp> rdf:type owl:DatatypeProperty ;
+                                                rdfs:domain [ rdf:type owl:Class ;
+                                                              owl:unionOf ( of:Link
+                                                                            of:Port
+                                                                          )
+                                                            ] ;
+                                                rdfs:range xsd:boolean .
+
+
+###  http://www.co-ode.org/ontologies/ont.owl#port_no
+<http://www.co-ode.org/ontologies/ont.owl#port_no> rdf:type owl:DatatypeProperty ;
+                                                   rdfs:range xsd:int .
+
+
+#################################################################
+#    Classes
+#################################################################
+
+###  http://home.eps.hw.ac.uk/~qz1/Action
+of:Action rdf:type owl:Class .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/ActionOutput
+of:ActionOutput rdf:type owl:Class ;
+                rdfs:subClassOf of:Action .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/AvailPath
+of:AvailPath rdf:type owl:Class .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/Flow
+of:Flow rdf:type owl:Class .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/Host
+of:Host rdf:type owl:Class ;
+        rdfs:subClassOf of:Port .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/Link
+of:Link rdf:type owl:Class ;
+        owl:disjointUnionOf ( of:Action
+                              of:AvailPath
+                              of:Flow
+                              of:Path
+                              of:PathHop
+                              of:Port
+                              of:Queue
+                              of:Switch
+                            ) .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/Path
+of:Path rdf:type owl:Class .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/PathFlow
+of:PathFlow rdf:type owl:Class ;
+            rdfs:subClassOf of:Flow .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/PathHop
+of:PathHop rdf:type owl:Class .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/Port
+of:Port rdf:type owl:Class .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/Queue
+of:Queue rdf:type owl:Class .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/Switch
+of:Switch rdf:type owl:Class .
+
+
+#################################################################
+#    Individuals
+#################################################################
+
+###  http://home.eps.hw.ac.uk/~qz1/
+<http://home.eps.hw.ac.uk/~qz1/> rdf:type owl:NamedIndividual ,
+                                          of:Path ;
+                                 of:hasActive of:_1 ;
+                                 of:hasDst of:s1_host3 ,
+                                           of:s5_host2 ;
+                                 of:hasFlow of:s1_flow8 ,
+                                            of:s1_flow9 ,
+                                            of:s3_flow10 ,
+                                            of:s3_flow7 ,
+                                            of:s5_flow11 ,
+                                            of:s5_flow6 ;
+                                 of:hasSrc of:s1_host3 ,
+                                           of:s5_host2 .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/_1
+of:_1 rdf:type owl:NamedIndividual ,
+               of:AvailPath ;
+      of:realizes <http://home.eps.hw.ac.uk/~qz1/> ;
+      of:hasState "Inactive"^^xsd:string .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/_1_0
+of:_1_0 rdf:type owl:NamedIndividual ,
+                 of:PathHop ;
+        of:belongs of:_1 ;
+        of:hasLink of:link_s1_port2_s3_port1 ,
+                   of:link_s5_port2_s3_port2 ;
+        of:hasIX 1 .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/_1_1
+of:_1_1 rdf:type owl:NamedIndividual ,
+                 of:PathHop ;
+        of:belongs of:_1 ;
+        of:hasLink of:link_s3_port1_s1_port2 ,
+                   of:link_s3_port2_s5_port2 ;
+        of:hasIX 2 .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/_2
+of:_2 rdf:type owl:NamedIndividual ,
+               of:AvailPath ;
+      of:realizes <http://home.eps.hw.ac.uk/~qz1/> ;
+      of:hasState "Inactive"^^xsd:string .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/_2_0
+of:_2_0 rdf:type owl:NamedIndividual ,
+                 of:PathHop ;
+        of:belongs of:_2 ;
+        of:hasLink of:link_s1_port3_s4_port1 ,
+                   of:link_s5_port1_s4_port3 ;
+        of:hasIX 1 .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/_2_1
+of:_2_1 rdf:type owl:NamedIndividual ,
+                 of:PathHop ;
+        of:belongs of:_2 ;
+        of:hasLink of:link_s4_port1_s1_port3 ,
+                   of:link_s4_port3_s5_port1 ;
+        of:hasIX 2 .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/_3
+of:_3 rdf:type owl:NamedIndividual ,
+               of:AvailPath ;
+      of:realizes <http://home.eps.hw.ac.uk/~qz1/> ;
+      of:hasState "Inactive"^^xsd:string .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/_3_0
+of:_3_0 rdf:type owl:NamedIndividual ,
+                 of:PathHop ;
+        of:belongs of:_3 ;
+        of:hasLink of:link_s1_port1_s2_port1 ,
+                   of:link_s5_port1_s4_port3 ;
+        of:hasIX 1 .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/_3_1
+of:_3_1 rdf:type owl:NamedIndividual ,
+                 of:PathHop ;
+        of:belongs of:_3 ;
+        of:hasLink of:link_s2_port2_s4_port2 ,
+                   of:link_s4_port2_s2_port2 ;
+        of:hasIX 2 .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/_3_2
+of:_3_2 rdf:type owl:NamedIndividual ,
+                 of:PathHop ;
+        of:belongs of:_3 ;
+        of:hasLink of:link_s2_port1_s1_port1 ,
+                   of:link_s4_port3_s5_port1 ;
+        of:hasIX 3 .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/link_s1_port1_s2_port1
+of:link_s1_port1_s2_port1 rdf:type owl:NamedIndividual ,
+                                   of:Link ;
+                          of:hasDstPort of:s2_port1 ;
+                          of:hasSrcPort of:s1_port1 ;
+                          of:hasCapacity 1000000000 ;
+                          of:hasLoad 0 ;
+                          of:isEnabled "true"^^xsd:boolean .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/link_s1_port2_s3_port1
+of:link_s1_port2_s3_port1 rdf:type owl:NamedIndividual ,
+                                   of:Link ;
+                          of:hasDstPort of:s3_port1 ;
+                          of:hasSrcPort of:s1_port2 ;
+                          of:hasCapacity 1000000000 ;
+                          of:hasLoad 0 ;
+                          of:isEnabled "true"^^xsd:boolean .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/link_s1_port3_s4_port1
+of:link_s1_port3_s4_port1 rdf:type owl:NamedIndividual ,
+                                   of:Link ;
+                          of:hasDstPort of:s4_port1 ;
+                          of:hasSrcPort of:s1_port3 ;
+                          of:hasCapacity 1000000000 ;
+                          of:hasLoad 0 ;
+                          of:isEnabled "true"^^xsd:boolean .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/link_s2_port1_s1_port1
+of:link_s2_port1_s1_port1 rdf:type owl:NamedIndividual ,
+                                   of:Link ;
+                          of:hasDstPort of:s1_port1 ;
+                          of:hasSrcPort of:s2_port1 ;
+                          of:hasCapacity 1000000000 ;
+                          of:hasLoad 0 ;
+                          of:isEnabled "true"^^xsd:boolean .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/link_s2_port2_s4_port2
+of:link_s2_port2_s4_port2 rdf:type owl:NamedIndividual ,
+                                   of:Link ;
+                          of:hasDstPort of:s4_port2 ;
+                          of:hasSrcPort of:s2_port2 ;
+                          of:hasCapacity 1000000000 ;
+                          of:hasLoad 0 ;
+                          of:isEnabled "true"^^xsd:boolean .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/link_s3_port1_s1_port2
+of:link_s3_port1_s1_port2 rdf:type owl:NamedIndividual ,
+                                   of:Link ;
+                          of:hasDstPort of:s1_port2 ;
+                          of:hasSrcPort of:s3_port1 ;
+                          of:hasCapacity 1000000000 ;
+                          of:hasLoad 0 ;
+                          of:isEnabled "true"^^xsd:boolean .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/link_s3_port2_s5_port2
+of:link_s3_port2_s5_port2 rdf:type owl:NamedIndividual ,
+                                   of:Link ;
+                          of:hasDstPort of:s5_port2 ;
+                          of:hasSrcPort of:s3_port2 ;
+                          of:hasCapacity 1000000000 ;
+                          of:hasLoad 0 ;
+                          of:isEnabled "true"^^xsd:boolean .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/link_s4_port1_s1_port3
+of:link_s4_port1_s1_port3 rdf:type owl:NamedIndividual ,
+                                   of:Link ;
+                          of:hasDstPort of:s1_port3 ;
+                          of:hasSrcPort of:s4_port1 ;
+                          of:hasCapacity 1000000000 ;
+                          of:hasLoad 0 ;
+                          of:isEnabled "true"^^xsd:boolean .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/link_s4_port2_s2_port2
+of:link_s4_port2_s2_port2 rdf:type owl:NamedIndividual ,
+                                   of:Link ;
+                          of:hasDstPort of:s2_port2 ;
+                          of:hasSrcPort of:s4_port2 ;
+                          of:hasCapacity 1000000000 ;
+                          of:hasLoad 0 ;
+                          of:isEnabled "true"^^xsd:boolean .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/link_s4_port3_s5_port1
+of:link_s4_port3_s5_port1 rdf:type owl:NamedIndividual ,
+                                   of:Link ;
+                          of:hasDstPort of:s5_port1 ;
+                          of:hasSrcPort of:s4_port3 ;
+                          of:hasCapacity 1000000000 ;
+                          of:hasLoad 0 ;
+                          of:isEnabled "true"^^xsd:boolean .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/link_s5_port1_s4_port3
+of:link_s5_port1_s4_port3 rdf:type owl:NamedIndividual ,
+                                   of:Link ;
+                          of:hasDstPort of:s4_port3 ;
+                          of:hasSrcPort of:s5_port1 ;
+                          of:hasCapacity 1000000000 ;
+                          of:hasLoad 0 ;
+                          of:isEnabled "true"^^xsd:boolean .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/link_s5_port2_s3_port2
+of:link_s5_port2_s3_port2 rdf:type owl:NamedIndividual ,
+                                   of:Link ;
+                          of:hasDstPort of:s3_port2 ;
+                          of:hasSrcPort of:s5_port2 ;
+                          of:hasCapacity 1000000000 ;
+                          of:hasLoad 0 ;
+                          of:isEnabled "true"^^xsd:boolean .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/s1
+of:s1 rdf:type owl:NamedIndividual ,
+               of:Switch ;
+      of:hasFlow of:s1_flow1 ,
+                 of:s1_flow8 ,
+                 of:s1_flow9 ;
+      of:hasPort of:s1_port1 ,
+                 of:s1_port2 ,
+                 of:s1_port3 ,
+                 of:s1_port4 ,
+                 of:s1_port5 ;
+      of:hasID 1 ;
+      of:hasName "s1"^^xsd:string .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/s1_flow1
+of:s1_flow1 rdf:type owl:NamedIndividual ,
+                     of:Flow ;
+            of:hasAction of:s1_flow1_action0 ;
+            of:cookie 1 ;
+            of:flags 0 ;
+            of:hard_timeout 0 ;
+            of:idle_timeout 0 ;
+            of:table_id 0 ;
+            of:priority 0 .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/s1_flow1_action0
+of:s1_flow1_action0 rdf:type owl:NamedIndividual ,
+                             of:ActionOutput ;
+                    of:toPort of:s1_port4294967293 .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/s1_flow8
+of:s1_flow8 rdf:type owl:NamedIndividual ,
+                     of:PathFlow ;
+            of:hasAction of:s1_flow8_action0 ;
+            of:cookie 8 ;
+            of:eth_dst "00:00:00:00:00:02"^^xsd:string ;
+            of:eth_src "00:00:00:00:00:01"^^xsd:string ;
+            of:flags 0 ;
+            of:hard_timeout 0 ;
+            of:idle_timeout 0 ;
+            of:in_port 4 ;
+            of:table_id 0 ;
+            of:hopCount 1 ;
+            of:path <http://home.eps.hw.ac.uk/~qz1/> ;
+            of:priority 1 .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/s1_flow8_action0
+of:s1_flow8_action0 rdf:type owl:NamedIndividual ,
+                             of:ActionOutput ;
+                    of:toPort of:s1_port2 .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/s1_flow9
+of:s1_flow9 rdf:type owl:NamedIndividual ,
+                     of:PathFlow ;
+            of:hasAction of:s1_flow9_action0 ;
+            of:cookie 9 ;
+            of:eth_dst "00:00:00:00:00:01"^^xsd:string ;
+            of:eth_src "00:00:00:00:00:02"^^xsd:string ;
+            of:flags 0 ;
+            of:hard_timeout 0 ;
+            of:idle_timeout 0 ;
+            of:in_port 2 ;
+            of:table_id 0 ;
+            of:hopCount 1 ;
+            of:path <http://home.eps.hw.ac.uk/~qz1/> ;
+            of:priority 1 .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/s1_flow9_action0
+of:s1_flow9_action0 rdf:type owl:NamedIndividual ,
+                             of:ActionOutput ;
+                    of:toPort of:s1_port4 .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/s1_host1
+of:s1_host1 rdf:type owl:NamedIndividual ,
+                     of:Host ;
+            of:connectToPort of:s1_port5 ;
+            of:hasIPv4 "10.0.0.3"^^xsd:string ;
+            of:hasMAC "00:00:00:00:00:03"^^xsd:string .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/s1_host3
+of:s1_host3 rdf:type owl:NamedIndividual ,
+                     of:Host ;
+            of:connectToPort of:s1_port4 ;
+            of:hasIPv4 "10.0.0.1"^^xsd:string ;
+            of:hasMAC "00:00:00:00:00:01"^^xsd:string .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/s1_port1
+of:s1_port1 rdf:type owl:NamedIndividual ,
+                     of:Port ;
+            of:connectToPort of:s2_port1 ;
+            of:isIn of:s1 ;
+            of:hasCapacity 1000000000 ;
+            of:hasLoad 0 ;
+            of:hasMAC "aa:6d:e4:ff:d2:ea"^^xsd:string ;
+            of:hasName "s1-eth1"^^xsd:string ;
+            of:isUP "true"^^xsd:boolean ;
+            of:port_no 1 .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/s1_port2
+of:s1_port2 rdf:type owl:NamedIndividual ,
+                     of:Port ;
+            of:connectToPort of:s3_port1 ;
+            of:hasQueue of:s1_queue208 ;
+            of:isIn of:s1 ;
+            of:hasCapacity 1000000000 ;
+            of:hasLoad 1000000000 ;
+            of:hasMAC "be:ca:4c:ac:09:ce"^^xsd:string ;
+            of:hasName "s1-eth2"^^xsd:string ;
+            of:isUP "true"^^xsd:boolean ;
+            of:port_no 2 .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/s1_port3
+of:s1_port3 rdf:type owl:NamedIndividual ,
+                     of:Port ;
+            of:connectToPort of:s4_port1 ;
+            of:isIn of:s1 ;
+            of:hasCapacity 1000000000 ;
+            of:hasLoad 0 ;
+            of:hasMAC "ee:01:46:5e:ea:bd"^^xsd:string ;
+            of:hasName "s1-eth3"^^xsd:string ;
+            of:isUP "true"^^xsd:boolean ;
+            of:port_no 3 .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/s1_port4
+of:s1_port4 rdf:type owl:NamedIndividual ,
+                     of:Port ;
+            of:connectToPort of:s1_host3 ;
+            of:hasQueue of:s1_queue409 ;
+            of:isIn of:s1 ;
+            of:hasCapacity 1000000000 ;
+            of:hasLoad 1000000000 ;
+            of:hasMAC "76:05:a6:76:9b:6a"^^xsd:string ;
+            of:hasName "s1-eth4"^^xsd:string ;
+            of:isUP "true"^^xsd:boolean ;
+            of:port_no 4 .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/s1_port4294967293
+of:s1_port4294967293 rdf:type owl:NamedIndividual .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/s1_port5
+of:s1_port5 rdf:type owl:NamedIndividual ,
+                     of:Port ;
+            of:connectToPort of:s1_host1 ;
+            of:isIn of:s1 ;
+            of:hasCapacity 1000000000 ;
+            of:hasLoad 0 ;
+            of:hasMAC "ea:e2:32:01:33:06"^^xsd:string ;
+            of:hasName "s1-eth5"^^xsd:string ;
+            of:isUP "true"^^xsd:boolean ;
+            of:port_no 5 .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/s1_queue208
+of:s1_queue208 rdf:type owl:NamedIndividual ,
+                        of:Queue ;
+               of:hasPath <http://home.eps.hw.ac.uk/~qz1/> ;
+               of:hasBW 1000000000 .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/s1_queue409
+of:s1_queue409 rdf:type owl:NamedIndividual ,
+                        of:Queue ;
+               of:hasPath <http://home.eps.hw.ac.uk/~qz1/> ;
+               of:hasBW 1000000000 .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/s2
+of:s2 rdf:type owl:NamedIndividual ,
+               of:Switch ;
+      of:hasFlow of:s2_flow2 ;
+      of:hasPort of:s2_port1 ,
+                 of:s2_port2 ,
+                 of:s2_port3 ;
+      of:hasID 2 ;
+      of:hasName "s2"^^xsd:string .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/s2_flow2
+of:s2_flow2 rdf:type owl:NamedIndividual ,
+                     of:Flow ;
+            of:hasAction of:s2_flow2_action0 ;
+            of:cookie 2 ;
+            of:flags 0 ;
+            of:hard_timeout 0 ;
+            of:idle_timeout 0 ;
+            of:table_id 0 ;
+            of:priority 0 .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/s2_flow2_action0
+of:s2_flow2_action0 rdf:type owl:NamedIndividual ,
+                             of:ActionOutput ;
+                    of:toPort of:s2_port4294967293 .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/s2_host5
+of:s2_host5 rdf:type owl:NamedIndividual ,
+                     of:Host ;
+            of:connectToPort of:s2_port3 ;
+            of:hasIPv4 "10.0.0.5"^^xsd:string ;
+            of:hasMAC "00:00:00:00:00:05"^^xsd:string .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/s2_port1
+of:s2_port1 rdf:type owl:NamedIndividual ,
+                     of:Port ;
+            of:connectToPort of:s1_port1 ;
+            of:isIn of:s2 ;
+            of:hasCapacity 1000000000 ;
+            of:hasLoad 0 ;
+            of:hasMAC "d6:4a:84:11:87:52"^^xsd:string ;
+            of:hasName "s2-eth1"^^xsd:string ;
+            of:isUP "true"^^xsd:boolean ;
+            of:port_no 1 .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/s2_port2
+of:s2_port2 rdf:type owl:NamedIndividual ,
+                     of:Port ;
+            of:connectToPort of:s4_port2 ;
+            of:isIn of:s2 ;
+            of:hasCapacity 1000000000 ;
+            of:hasLoad 0 ;
+            of:hasMAC "ca:1f:73:bb:f2:76"^^xsd:string ;
+            of:hasName "s2-eth2"^^xsd:string ;
+            of:isUP "true"^^xsd:boolean ;
+            of:port_no 2 .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/s2_port3
+of:s2_port3 rdf:type owl:NamedIndividual ,
+                     of:Port ;
+            of:connectToPort of:s2_host5 ;
+            of:isIn of:s2 ;
+            of:hasCapacity 1000000000 ;
+            of:hasLoad 0 ;
+            of:hasMAC "8a:38:99:6d:b0:06"^^xsd:string ;
+            of:hasName "s2-eth3"^^xsd:string ;
+            of:isUP "true"^^xsd:boolean ;
+            of:port_no 3 .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/s2_port4294967293
+of:s2_port4294967293 rdf:type owl:NamedIndividual .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/s3
+of:s3 rdf:type owl:NamedIndividual ,
+               of:Switch ;
+      of:hasFlow of:s3_flow10 ,
+                 of:s3_flow3 ,
+                 of:s3_flow7 ;
+      of:hasPort of:s3_port1 ,
+                 of:s3_port2 ;
+      of:hasID 3 ;
+      of:hasName "s3"^^xsd:string .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/s3_flow10
+of:s3_flow10 rdf:type owl:NamedIndividual ,
+                      of:PathFlow ;
+             of:hasAction of:s3_flow10_action0 ;
+             of:cookie 10 ;
+             of:eth_dst "00:00:00:00:00:01"^^xsd:string ;
+             of:eth_src "00:00:00:00:00:02"^^xsd:string ;
+             of:flags 0 ;
+             of:hard_timeout 0 ;
+             of:idle_timeout 0 ;
+             of:in_port 2 ;
+             of:table_id 0 ;
+             of:hopCount 2 ;
+             of:path <http://home.eps.hw.ac.uk/~qz1/> ;
+             of:priority 1 .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/s3_flow10_action0
+of:s3_flow10_action0 rdf:type owl:NamedIndividual ,
+                              of:ActionOutput ;
+                     of:toPort of:s3_port1 .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/s3_flow3
+of:s3_flow3 rdf:type owl:NamedIndividual ,
+                     of:Flow ;
+            of:hasAction of:s3_flow3_action0 ;
+            of:cookie 3 ;
+            of:flags 0 ;
+            of:hard_timeout 0 ;
+            of:idle_timeout 0 ;
+            of:table_id 0 ;
+            of:priority 0 .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/s3_flow3_action0
+of:s3_flow3_action0 rdf:type owl:NamedIndividual ,
+                             of:ActionOutput ;
+                    of:toPort of:s3_port4294967293 .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/s3_flow7
+of:s3_flow7 rdf:type owl:NamedIndividual ,
+                     of:PathFlow ;
+            of:hasAction of:s3_flow7_action0 ;
+            of:cookie 7 ;
+            of:eth_dst "00:00:00:00:00:02"^^xsd:string ;
+            of:eth_src "00:00:00:00:00:01"^^xsd:string ;
+            of:flags 0 ;
+            of:hard_timeout 0 ;
+            of:idle_timeout 0 ;
+            of:in_port 1 ;
+            of:table_id 0 ;
+            of:hopCount 2 ;
+            of:path <http://home.eps.hw.ac.uk/~qz1/> ;
+            of:priority 1 .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/s3_flow7_action0
+of:s3_flow7_action0 rdf:type owl:NamedIndividual ,
+                             of:ActionOutput ;
+                    of:toPort of:s3_port2 .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/s3_port1
+of:s3_port1 rdf:type owl:NamedIndividual ,
+                     of:Port ;
+            of:connectToPort of:s1_port2 ;
+            of:hasQueue of:s3_queue110 ;
+            of:isIn of:s3 ;
+            of:hasCapacity 1000000000 ;
+            of:hasLoad 1000000000 ;
+            of:hasMAC "0e:7a:5e:a3:ff:3c"^^xsd:string ;
+            of:hasName "s3-eth1"^^xsd:string ;
+            of:isUP "true"^^xsd:boolean ;
+            of:port_no 1 .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/s3_port2
+of:s3_port2 rdf:type owl:NamedIndividual ,
+                     of:Port ;
+            of:connectToPort of:s5_port2 ;
+            of:hasQueue of:s3_queue207 ;
+            of:isIn of:s3 ;
+            of:hasCapacity 1000000000 ;
+            of:hasLoad 1000000000 ;
+            of:hasMAC "76:5f:3f:f9:f9:22"^^xsd:string ;
+            of:hasName "s3-eth2"^^xsd:string ;
+            of:isUP "true"^^xsd:boolean ;
+            of:port_no 2 .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/s3_port4294967293
+of:s3_port4294967293 rdf:type owl:NamedIndividual .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/s3_queue110
+of:s3_queue110 rdf:type owl:NamedIndividual ,
+                        of:Queue ;
+               of:hasPath <http://home.eps.hw.ac.uk/~qz1/> ;
+               of:hasBW 1000000000 .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/s3_queue207
+of:s3_queue207 rdf:type owl:NamedIndividual ,
+                        of:Queue ;
+               of:hasPath <http://home.eps.hw.ac.uk/~qz1/> ;
+               of:hasBW 1000000000 .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/s4
+of:s4 rdf:type owl:NamedIndividual ,
+               of:Switch ;
+      of:hasFlow of:s4_flow4 ;
+      of:hasPort of:s4_port1 ,
+                 of:s4_port2 ,
+                 of:s4_port3 ,
+                 of:s4_port4 ;
+      of:hasID 4 ;
+      of:hasName "s4"^^xsd:string .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/s4_flow4
+of:s4_flow4 rdf:type owl:NamedIndividual ,
+                     of:Flow ;
+            of:hasAction of:s4_flow4_action0 ;
+            of:cookie 4 ;
+            of:flags 0 ;
+            of:hard_timeout 0 ;
+            of:idle_timeout 0 ;
+            of:table_id 0 ;
+            of:priority 0 .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/s4_flow4_action0
+of:s4_flow4_action0 rdf:type owl:NamedIndividual ,
+                             of:ActionOutput ;
+                    of:toPort of:s4_port4294967293 .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/s4_host6
+of:s4_host6 rdf:type owl:NamedIndividual ,
+                     of:Host ;
+            of:connectToPort of:s4_port4 ;
+            of:hasIPv4 "10.0.0.4"^^xsd:string ;
+            of:hasMAC "00:00:00:00:00:04"^^xsd:string .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/s4_port1
+of:s4_port1 rdf:type owl:NamedIndividual ,
+                     of:Port ;
+            of:connectToPort of:s1_port3 ;
+            of:isIn of:s4 ;
+            of:hasCapacity 1000000000 ;
+            of:hasLoad 0 ;
+            of:hasMAC "9a:55:1e:0b:57:fa"^^xsd:string ;
+            of:hasName "s4-eth1"^^xsd:string ;
+            of:isUP "true"^^xsd:boolean ;
+            of:port_no 1 .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/s4_port2
+of:s4_port2 rdf:type owl:NamedIndividual ,
+                     of:Port ;
+            of:connectToPort of:s2_port2 ;
+            of:isIn of:s4 ;
+            of:hasCapacity 1000000000 ;
+            of:hasLoad 0 ;
+            of:hasMAC "ce:8a:e6:6c:26:44"^^xsd:string ;
+            of:hasName "s4-eth2"^^xsd:string ;
+            of:isUP "true"^^xsd:boolean ;
+            of:port_no 2 .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/s4_port3
+of:s4_port3 rdf:type owl:NamedIndividual ,
+                     of:Port ;
+            of:connectToPort of:s5_port1 ;
+            of:isIn of:s4 ;
+            of:hasCapacity 1000000000 ;
+            of:hasLoad 0 ;
+            of:hasMAC "c2:41:62:75:cd:2d"^^xsd:string ;
+            of:hasName "s4-eth3"^^xsd:string ;
+            of:isUP "true"^^xsd:boolean ;
+            of:port_no 3 .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/s4_port4
+of:s4_port4 rdf:type owl:NamedIndividual ,
+                     of:Port ;
+            of:connectToPort of:s4_host6 ;
+            of:isIn of:s4 ;
+            of:hasCapacity 1000000000 ;
+            of:hasLoad 0 ;
+            of:hasMAC "12:c0:e0:9b:01:3c"^^xsd:string ;
+            of:hasName "s4-eth4"^^xsd:string ;
+            of:isUP "true"^^xsd:boolean ;
+            of:port_no 4 .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/s4_port4294967293
+of:s4_port4294967293 rdf:type owl:NamedIndividual .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/s5
+of:s5 rdf:type owl:NamedIndividual ,
+               of:Switch ;
+      of:hasFlow of:s5_flow11 ,
+                 of:s5_flow5 ,
+                 of:s5_flow6 ;
+      of:hasPort of:s5_port1 ,
+                 of:s5_port2 ,
+                 of:s5_port3 ,
+                 of:s5_port4 ;
+      of:hasID 5 ;
+      of:hasName "s5"^^xsd:string .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/s5_flow11
+of:s5_flow11 rdf:type owl:NamedIndividual ,
+                      of:PathFlow ;
+             of:hasAction of:s5_flow11_action0 ;
+             of:cookie 11 ;
+             of:eth_dst "00:00:00:00:00:01"^^xsd:string ;
+             of:eth_src "00:00:00:00:00:02"^^xsd:string ;
+             of:flags 0 ;
+             of:hard_timeout 0 ;
+             of:idle_timeout 0 ;
+             of:in_port 3 ;
+             of:table_id 0 ;
+             of:hopCount 3 ;
+             of:path <http://home.eps.hw.ac.uk/~qz1/> ;
+             of:priority 1 .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/s5_flow11_action0
+of:s5_flow11_action0 rdf:type owl:NamedIndividual ,
+                              of:ActionOutput ;
+                     of:toPort of:s5_port2 .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/s5_flow5
+of:s5_flow5 rdf:type owl:NamedIndividual ,
+                     of:Flow ;
+            of:hasAction of:s5_flow5_action0 ;
+            of:cookie 5 ;
+            of:flags 0 ;
+            of:hard_timeout 0 ;
+            of:idle_timeout 0 ;
+            of:table_id 0 ;
+            of:priority 0 .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/s5_flow5_action0
+of:s5_flow5_action0 rdf:type owl:NamedIndividual ,
+                             of:ActionOutput ;
+                    of:toPort of:s5_port4294967293 .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/s5_flow6
+of:s5_flow6 rdf:type owl:NamedIndividual ,
+                     of:PathFlow ;
+            of:hasAction of:s5_flow6_action0 ;
+            of:cookie 6 ;
+            of:eth_dst "00:00:00:00:00:02"^^xsd:string ;
+            of:eth_src "00:00:00:00:00:01"^^xsd:string ;
+            of:flags 0 ;
+            of:hard_timeout 0 ;
+            of:idle_timeout 0 ;
+            of:in_port 2 ;
+            of:table_id 0 ;
+            of:hopCount 3 ;
+            of:path <http://home.eps.hw.ac.uk/~qz1/> ;
+            of:priority 1 .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/s5_flow6_action0
+of:s5_flow6_action0 rdf:type owl:NamedIndividual ,
+                             of:ActionOutput ;
+                    of:toPort of:s5_port3 .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/s5_host2
+of:s5_host2 rdf:type owl:NamedIndividual ,
+                     of:Host ;
+            of:connectToPort of:s5_port3 ;
+            of:hasIPv4 "10.0.0.2"^^xsd:string ;
+            of:hasMAC "00:00:00:00:00:02"^^xsd:string .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/s5_host4
+of:s5_host4 rdf:type owl:NamedIndividual ,
+                     of:Host ;
+            of:connectToPort of:s5_port4 ;
+            of:hasIPv4 "10.0.0.6"^^xsd:string ;
+            of:hasMAC "00:00:00:00:00:06"^^xsd:string .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/s5_port1
+of:s5_port1 rdf:type owl:NamedIndividual ,
+                     of:Port ;
+            of:connectToPort of:s4_port3 ;
+            of:isIn of:s5 ;
+            of:hasCapacity 1000000000 ;
+            of:hasLoad 0 ;
+            of:hasMAC "ae:a9:d9:0f:3b:47"^^xsd:string ;
+            of:hasName "s5-eth1"^^xsd:string ;
+            of:isUP "true"^^xsd:boolean ;
+            of:port_no 1 .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/s5_port2
+of:s5_port2 rdf:type owl:NamedIndividual ,
+                     of:Port ;
+            of:connectToPort of:s3_port2 ;
+            of:hasQueue of:s5_queue211 ;
+            of:isIn of:s5 ;
+            of:hasCapacity 1000000000 ;
+            of:hasLoad 1000000000 ;
+            of:hasMAC "f6:39:c5:ab:15:8f"^^xsd:string ;
+            of:hasName "s5-eth2"^^xsd:string ;
+            of:isUP "true"^^xsd:boolean ;
+            of:port_no 2 .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/s5_port3
+of:s5_port3 rdf:type owl:NamedIndividual ,
+                     of:Port ;
+            of:connectToPort of:s5_host2 ;
+            of:hasQueue of:s5_queue306 ;
+            of:isIn of:s5 ;
+            of:hasCapacity 1000000000 ;
+            of:hasLoad 1000000000 ;
+            of:hasMAC "2a:70:1a:12:92:49"^^xsd:string ;
+            of:hasName "s5-eth3"^^xsd:string ;
+            of:isUP "true"^^xsd:boolean ;
+            of:port_no 3 .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/s5_port4
+of:s5_port4 rdf:type owl:NamedIndividual ,
+                     of:Port ;
+            of:connectToPort of:s5_host4 ;
+            of:isIn of:s5 ;
+            of:hasCapacity 1000000000 ;
+            of:hasLoad 0 ;
+            of:hasMAC "a6:ac:6b:11:f5:dc"^^xsd:string ;
+            of:hasName "s5-eth4"^^xsd:string ;
+            of:isUP "true"^^xsd:boolean ;
+            of:port_no 4 .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/s5_port4294967293
+of:s5_port4294967293 rdf:type owl:NamedIndividual .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/s5_queue211
+of:s5_queue211 rdf:type owl:NamedIndividual ,
+                        of:Queue ;
+               of:hasPath <http://home.eps.hw.ac.uk/~qz1/> ;
+               of:hasBW 1000000000 .
+
+
+###  http://home.eps.hw.ac.uk/~qz1/s5_queue306
+of:s5_queue306 rdf:type owl:NamedIndividual ,
+                        of:Queue ;
+               of:hasPath <http://home.eps.hw.ac.uk/~qz1/> ;
+               of:hasBW 1000000000 .
+
+
+[ owl:minCardinality 1
+] .
+
+[ owl:maxCardinality 1
+ ] .
+
+[ owl:minCardinality 1
+ ] .
+
+[ owl:minCardinality 0
+ ] .
+
+[ owl:minCardinality 0
+ ] .
+
+[ owl:maxCardinality 1
+ ] .
+
+###  Generated by the OWL API (version 4.2.8.20170104-2310) https://github.com/owlcs/owlapi
