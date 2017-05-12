@@ -1860,8 +1860,9 @@ class VSCtl(object):
         for queue in queues:
             max_rate = queue.get('max-rate', None)
             min_rate = queue.get('min-rate', None)
+            qid = queue.get('queue-id', queue_id)
             ovsrec_queue = ctx.set_queue(
-                vsctl_qos, max_rate, min_rate, queue_id)
+                vsctl_qos, max_rate, min_rate, qid)
             results.append(ovsrec_queue)
             queue_id += 1
         command.result = results
