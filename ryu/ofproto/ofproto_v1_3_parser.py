@@ -859,6 +859,14 @@ class OFPMatch(StringifyMixin):
     def __contains__(self, key):
         return key in dict(self._fields2)
 
+    def __eq__(self, other):
+        if len(self._fields2) != len(other._fields2):
+            return False
+        for f in self._fields2:
+            if f not in other._fields2:
+                return False
+        return True
+
     def iteritems(self):
         return iter(dict(self._fields2).items())
 
@@ -889,7 +897,7 @@ class OFPMatch(StringifyMixin):
 
         body = {"oxm_fields": [ofproto.oxm_to_jsondict(k, uv) for k, uv
                                in o._fields2],
-                "length": o.length,
+                # "length": o.length,
                 "type": o.type}
         return {self.__class__.__name__: body}
 
@@ -2775,6 +2783,12 @@ class OFPInstructionGotoTable(OFPInstruction):
         self.len = ofproto.OFP_INSTRUCTION_GOTO_TABLE_SIZE
         self.table_id = table_id
 
+    def __eq__(self, other):
+        if ((not isinstance(other, OFPInstructionGoToTable)) or
+            (self.type != other.type) or (self.table_id != other.table_id)):
+            return False
+        return True
+
     @classmethod
     def parser(cls, buf, offset):
         (type_, len_, table_id) = struct.unpack_from(
@@ -2807,6 +2821,13 @@ class OFPInstructionWriteMetadata(OFPInstruction):
         self.len = ofproto.OFP_INSTRUCTION_WRITE_METADATA_SIZE
         self.metadata = metadata
         self.metadata_mask = metadata_mask
+
+    def __eq__(self, other):
+        if ((not isinstance(other, OFPInstructionWriteMetadata)) or
+            (self.type != other.type) or (self.metadata != other.metadata)
+            or (self.metadata_mask != other.metadata_mask)):
+            return False
+        return True
 
     @classmethod
     def parser(cls, buf, offset):
@@ -2849,6 +2870,21 @@ class OFPInstructionActions(OFPInstruction):
         for a in actions:
             assert isinstance(a, OFPAction)
         self.actions = actions
+        self.len = ofproto.OFP_INSTRUCTION_ACTIONS_SIZE
+        if self.actions:
+            for a in self.actions:
+                self.len += a.len
+
+        self.len += utils.round_up(self.len, 8) - self.len
+
+    def __eq__(self, other):
+        if ((not isinstance(other, OFPInstructionActions)) or
+        (self.type != other.type) or (len(self.actions) != len(other.actions))):
+            return False
+        for a in self.actions:
+            if a not in other.actions:
+                return False
+        return True
 
     @classmethod
     def parser(cls, buf, offset):
@@ -2924,6 +2960,12 @@ class OFPInstructionMeter(OFPInstruction):
         msg_pack_into(ofproto.OFP_INSTRUCTION_METER_PACK_STR,
                       buf, offset, self.type, self.len, self.meter_id)
 
+    def __eq__(self, other):
+        if ((not isinstance(other, OFPInstructionMeters)) or
+            (self.type != other.type) or (self.meter_id != other.meter_id)):
+            return False
+        return True
+
 
 class OFPActionHeader(StringifyMixin):
     def __init__(self, type_, len_):
@@ -2993,6 +3035,12 @@ class OFPActionOutput(OFPAction):
                       offset, self.type, self.len, self.port, self.max_len)
 
 
+    def __eq__(self, other):
+        if ((not isinstance(other, OFPActionOutput)) or
+            (self.port != other.port) or (self.max_len != other.max_len)):
+            return False
+        return True
+
 @OFPAction.register_action_type(ofproto.OFPAT_GROUP,
                                 ofproto.OFP_ACTION_GROUP_SIZE)
 class OFPActionGroup(OFPAction):
@@ -3010,6 +3058,13 @@ class OFPActionGroup(OFPAction):
     def __init__(self, group_id=0, type_=None, len_=None):
         super(OFPActionGroup, self).__init__()
         self.group_id = group_id
+
+    def __eq__(self, other):
+        if ((not isinstance(other, OFPActionGroup)) or
+            (self.group_id != other.group_id)):
+            return False
+        return True
+
 
     @classmethod
     def parser(cls, buf, offset):
@@ -3052,6 +3107,13 @@ class OFPActionSetQueue(OFPAction):
                       offset, self.type, self.len, self.queue_id)
 
 
+    def __eq__(self, other):
+        if ((not isinstance(other, OFPActionSetQueue)) or
+            (self.queue_id != other.queue_id)):
+            return False
+        return True
+
+
 @OFPAction.register_action_type(ofproto.OFPAT_SET_MPLS_TTL,
                                 ofproto.OFP_ACTION_MPLS_TTL_SIZE)
 class OFPActionSetMplsTtl(OFPAction):
@@ -3080,6 +3142,11 @@ class OFPActionSetMplsTtl(OFPAction):
         msg_pack_into(ofproto.OFP_ACTION_MPLS_TTL_PACK_STR, buf,
                       offset, self.type, self.len, self.mpls_ttl)
 
+    def __eq__(self, other):
+        if ((not isinstance(other, OFPActionSetMplsTtl)) or
+            (self.mpls_ttl != other.mpls_ttl)):
+            return False
+        return True
 
 @OFPAction.register_action_type(ofproto.OFPAT_DEC_MPLS_TTL,
                                 ofproto.OFP_ACTION_HEADER_SIZE)
@@ -3316,6 +3383,12 @@ class OFPActionSetField(OFPAction):
             assert not isinstance(value, tuple)  # no mask
             self.key = key
             self.value = value
+
+    def __eq__(self, other):
+        if ((not isinstance(other, OFPActionSetField)) or
+            (self.key != other.key) or (self.value != other.value)):
+            return False
+        return True
 
     @classmethod
     def parser(cls, buf, offset):
