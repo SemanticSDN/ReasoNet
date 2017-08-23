@@ -79,13 +79,15 @@ class FlowManager(app_manager.RyuApp):
 
         if queue is not None:
             qid = output * 100 + self.flow_count
-            pid = "s%d-eth%d"%(datapath.id, output)
+            # pid = "s%d-eth%d"%(datapath.id, output)
             self._create_queue(datapath, output, qid, queue, None)
             actions.append(parser.OFPActionSetQueue(qid))
         actions.append(parser.OFPActionOutput(out,ofproto.OFPCML_NO_BUFFER ))
 
         self.backend.add_flow_state(self.flow_count, datapath.id, priority, match, actions)
-        return self._add_flow(datapath, priority, match, actions, bid)
+        self.flow_count = self.flow_count + 1
+        inst = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS, actions)]
+        return self._add_flow(datapath, priority, match, inst, bid)
 
     def add_path_flow(self, pathid, hopCount,
                       datapath, priority=1, match=None,
@@ -100,21 +102,49 @@ class FlowManager(app_manager.RyuApp):
 
         if queue is not None:
             qid = output * 100 + self.flow_count
-            pid = "s%d-eth%d"%(datapath.id, output)
+            # pid = "s%d-eth%d"%(datapath.id, output)
             self._create_queue(datapath, output, qid, queue, pathid)
             actions.append(parser.OFPActionSetQueue(qid))
         actions.append(parser.OFPActionOutput(out,ofproto.OFPCML_NO_BUFFER ))
 
         self.backend.add_path_flow_state(self.flow_count, datapath.id, priority, match, actions,
                                          hopCount, pathid)
-        return self._add_flow(datapath, priority, match, actions, bid)
+        self.flow_count = self.flow_count + 1
+        inst = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS, actions)]
+        return # self._add_flow(datapath, priority, match, inst, bid)
 
     def flow_monitor(self):
        while self.is_active:
             self.export_event.clear()
 #            LOG.info("flow monitor fired!")
-            # flows = self.get_flows()
-            # TODO: get all flows, update individual flows stats and remove any unwanted flows
+            my_flows = self.backend.get_semantic_flows()
+            flows = self.get_flows()
+            del_flows = {}
+            for dpid in flows:
+                for f in flows[dpid]:
+                    a = f.instructions
+                    m = f.match
+                    res = [ix for (ix, f2) in enumerate(my_flows[dpid])
+                           if a == f2["actions"] and m == f2["match"]]
+                    for ix in res:
+                        print("found flow %s" % (m))
+                        del my_flows[dpid][ix]
+                    if len(res) == 0:
+                        if dpid not in del_flows:
+                            del_flows[dpid] = []
+                        del_flows[dpid].append(f)
+            print("adding " + str(my_flows))
+            print("removing " + str(del_flows))
+            for dpid in del_flows:
+                ofproto = self.dps[dpid].ofproto
+                for fl in del_flows[dpid]:
+                    self._del_strict_flow(self.dps[dpid], fl.priority, fl.match, fl.instructions)
+
+            for dpid in my_flows:
+                for fl in my_flows[dpid]:
+                    self._add_flow(self.dps[dpid], 1, fl["match"], fl["actions"], ofproto.OFP_NO_BUFFER)
+
+           # TODO: get all flows, update individual flows stats and remove any unwanted flows
             self.export_event.wait(timeout=self.TIMEOUT_CHECK_PERIOD)
 
     def get_flows(self):
@@ -180,15 +210,23 @@ class FlowManager(app_manager.RyuApp):
         self.backend.update(rq)
 
 
-    def _add_flow(self, datapath, priority, match, actions, bid):
+    def _add_flow(self, datapath, priority, match, inst, bid):
         ofproto = datapath.ofproto
         parser = datapath.ofproto_parser
 
-        inst = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS, actions)]
         mod = parser.OFPFlowMod(datapath=datapath, priority=priority, match=match,
+                                command=ofproto.OFPFC_ADD,
                                 instructions=inst, buffer_id=bid, cookie=self.flow_count)
         # LOG.info("adding path %s flow %s" % (pathid, str(mod)))
-        self.flow_count = self.flow_count + 1
         return datapath.send_msg(mod)
 
+    def _del_strict_flow(self, datapath, priority, match, inst):
+        ofproto = datapath.ofproto
+        parser = datapath.ofproto_parser
 
+        mod = parser.OFPFlowMod(datapath=datapath, priority=priority, match=match,
+                                command=ofproto.OFPFC_DELETE_STRICT, out_port=ofproto.OFPP_ANY, out_group=ofproto.OFPG_ANY,
+                                instructions=[], cookie=self.flow_count)
+        print ("deleting " + str(mod))
+        return datapath.send_msg(mod)
+        # LOG.info("deleting path %s flow %s" % (pathid, str(mod)))
