@@ -26,7 +26,7 @@ from ryu.topology import switches
 from ryu.app.stardogBackend import StardogBackend
 from ryu.app.pathManager import PathManager
 from ryu.app.flowManager import FlowManager
-from ryu.app.semanticController import SemanticController
+# from ryu.app.semanticController import SemanticController
 from ryu.app.topologyManager import TopologyManager
 from ryu.lib.packet import ethernet, arp, packet
 from ryu.lib.packet.ether_types import ETH_TYPE_ARP, ETH_TYPE_IP
@@ -61,10 +61,10 @@ class SemanticLearningSwitch(app_manager.RyuApp):
 
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
     def switch_features_handler(self, ev):
-        datapath = ev.msg.datapath
-        ofproto = datapath.ofproto
-        parser = datapath.ofproto_parser
-
+        # datapath = ev.msg.datapath
+        # ofproto = datapath.ofproto
+        # parser = datapath.ofproto_parser
+        return
 #        # install the table-miss flow entry.
 #        match = parser.OFPMatch()
 #        actions = [parser.OFPActionOutput(ofproto.OFPP_CONTROLLER,
@@ -92,7 +92,7 @@ class SemanticLearningSwitch(app_manager.RyuApp):
         # TODO Step 2: Is the destination known to the controller If not, drop for now
         # Step 3: compute the path
         if eth.ethertype == ETH_TYPE_IP and eth.dst != "ff:ff:ff:ff:ff:ff":
-            self.path.add_path(eth.src, eth.dst, msg.buffer_id,bw=1000000000)
+            self.path.add_path(eth.src, eth.dst, msg.buffer_id)
         return
 
     def _handle_arp (self, arp_pkt, datapath, port_no) :
