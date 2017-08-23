@@ -16,7 +16,8 @@
 import logging
 
 from ryu.base import app_manager
-
+from ryu.ofproto.ofproto_v1_3_parser import OFPMatch,OFPActionOutput, OFPInstructionActions
+import ryu.ofproto.ofproto_v1_3 as ofproto
 from rdflib import Graph, URIRef
 
 from rdflib import Literal, Namespace
@@ -26,24 +27,72 @@ from os import system
 
 LOG = logging.getLogger("StardogBackend")
 
+mappings = {
+    "in_port"        : ofproto.OXM_OF_IN_PORT,
+    "in_phy_port"    : ofproto.OXM_OF_IN_PHY_PORT,
+    "dl_dst"         : ofproto.OXM_OF_ETH_DST,
+    "dl_src"         : ofproto.OXM_OF_ETH_SRC,
+    "dl_type"        : ofproto.OXM_OF_ETH_TYPE,
+    "eth_dst"        : ofproto.OXM_OF_ETH_DST,
+    "eth_src"        : ofproto.OXM_OF_ETH_SRC,
+    "eth_type"       : ofproto.OXM_OF_ETH_TYPE,
+    "vlan_vid"       : ofproto.OXM_OF_VLAN_VID,
+    "vlan_pcp"       : ofproto.OXM_OF_VLAN_PCP,
+    "ip_dscp"        : ofproto.OXM_OF_IP_DSCP,
+    "ip_ecn"         : ofproto.OXM_OF_IP_ECN,
+    "ip_proto"       : ofproto.OXM_OF_IP_PROTO,
+    "ipv4_src"       : ofproto.OXM_OF_IPV4_SRC,
+    "ipv4_dst"       : ofproto.OXM_OF_IPV4_DST,
+    "tcp_src"        : ofproto.OXM_OF_TCP_SRC,
+    "tcp_dst"        : ofproto.OXM_OF_TCP_DST,
+    "udp_src"        : ofproto.OXM_OF_UDP_SRC,
+    "udp_dst"        : ofproto.OXM_OF_UDP_DST,
+    "sctp_src"       : ofproto.OXM_OF_SCTP_SRC,
+    "sctp_dst"       : ofproto.OXM_OF_SCTP_DST,
+    "icmpv4_type"    : ofproto.OXM_OF_ICMPV4_TYPE,
+    "icmpv4_code"    : ofproto.OXM_OF_ICMPV4_CODE,
+    "arp_opcode"     : ofproto.OXM_OF_ARP_OP,
+    "arp_spa"        : ofproto.OXM_OF_ARP_SPA,
+    "arp_tpa"        : ofproto.OXM_OF_ARP_TPA,
+    "arp_sha"        : ofproto.OXM_OF_ARP_SHA,
+    "arp_tha"        : ofproto.OXM_OF_ARP_THA,
+    "ipv6_src"       : ofproto.OXM_OF_IPV6_SRC,
+    "ipv6_dst"       : ofproto.OXM_OF_IPV6_DST,
+    "ipv6_flabel"    : ofproto.OXM_OF_IPV6_FLABEL,
+    "icmpv6_type"    : ofproto.OXM_OF_ICMPV6_TYPE,
+    "icmpv6_code"    : ofproto.OXM_OF_ICMPV6_CODE,
+    "ipv6_nd_target" : ofproto.OXM_OF_IPV6_ND_TARGET,
+    "ipv6_nd_sll"    : ofproto.OXM_OF_IPV6_ND_SLL,
+    "ipv6_nd_tll"    : ofproto.OXM_OF_IPV6_ND_TLL,
+    "mpls_label"     : ofproto.OXM_OF_MPLS_LABEL,
+    "mpls_tc"        : ofproto.OXM_OF_MPLS_TC,
+    "mpls_bos"       : ofproto.OXM_OF_MPLS_BOS,
+    "pbb_isid"       : ofproto.OXM_OF_PBB_ISID,
+    "tunnel_id"      : ofproto.OXM_OF_TUNNEL_ID,
+    "ipv6_exthdr"    : ofproto.OXM_OF_IPV6_EXTHDR,
+    "ipv6_exthdr_masked" : ofproto.OXM_OF_IPV6_EXTHDR
+}
+
+
 class StardogBackend(app_manager.RyuApp):
     def __init__(self, *args, **kwargs):
         super(StardogBackend, self).__init__(*args, **kwargs)
         self.name = 'stardogBackend'
         self.db = "test-haris"
         self.endpoint = 'http://10.30.65.148:5820/%s/query'%(self.db)
+        self.updateEndpoint = 'http://10.30.65.148:5820/%s/update'%(self.db)
         self.store = sparqlstore.SPARQLUpdateStore()
-        self.store.open((self.endpoint, self.endpoint))
+        self.store.open((self.endpoint, self.updateEndpoint))
         self.store.setCredentials('admin', 'admin')
         self.default_graph = URIRef('http://home.eps.hw.ac.uk/~qz1/')
         self.ns = Namespace('http://home.eps.hw.ac.uk/~qz1/')
         self.ng = Graph(self.store, identifier=self.default_graph)
 
         # Dirty hack to cleat the db upon restart
-        system('curl -X POST -d "query=CLEAR ALL" "http://admin:admin@10.30.65.148:5820/%s/query"'%(self.db))
+        system('curl -X POST -d "query=CLEAR ALL" "http://admin:admin@10.30.65.148:5820/%s/update"'%(self.db))
 
         g = Graph()
-        g.parse("/home/ubuntu/ryu-haris/ryu/app/sardonic-v3.ttl", format="n3")
+        g.parse("/home/ubuntu/ryu-haris/ryu/app/sardonic-v9.ttl", format="n3")
         self.insert_tuples(g)
         return
 
@@ -103,6 +152,74 @@ class StardogBackend(app_manager.RyuApp):
 
         dst_host, dst_mac = next(iter(res))
         return (dst_host, dst_mac)
+
+    def get_semantic_flows(self):
+        rq = """
+        PREFIX : <http://home.eps.hw.ac.uk/~qz1/>
+        select ?p ?param ?val
+        where
+        {
+          {
+            ?p rdf:type/rdfs:subClassOf* of:Flow;
+            ?param ?val.
+          }
+          UNION
+          {
+          ?flow rdf:type/rdfs:subClassOf* of:Flow;
+              of:hasAction ?p.
+            ?p ?param ?val.
+          }
+          UNION
+          {
+          ?p rdf:type/rdfs:subClassOf* of:Flow.
+            ?sw ?param ?p.
+            ?sw :hasID ?val.
+          }
+        }
+        """
+        res = self.store.query(rq)
+        flows = {}
+        actions = {}
+        ret = {}
+
+        for (a, b, c) in res:
+            a = a.replace("http://home.eps.hw.ac.uk/~qz1/", "").encode()
+            b = b.replace("http://home.eps.hw.ac.uk/~qz1/", "").encode()
+            c = c.replace("http://home.eps.hw.ac.uk/~qz1/", "").encode()
+            LOG.debug("%s %s %s" % (a,b,c))
+            if "hasAction" in b:
+                actions[c] = a
+            if "_action" in a:
+                if a not in flows[actions[a]]["actions"]:
+                    flows[actions[a]]["actions"][a] = {}
+                flows[actions[a]]["actions"][a][b] = c
+            else:
+                if a not in flows:
+                    # We need a datapath here
+                    flows[a] = {"match": {}, "datapath": None, "actions":{}}
+
+                if b in mappings:
+                    if b in ["in_port"]:
+                        flows[a]["match"][b] = int(c) # append_field(self.match_map[b], c)
+                    else:
+                        flows[a]["match"][b] = c # append_field(self.match_map[b], c)
+                if "hasFlow" in b:
+                    flows[a]["datapath"] = int(c)
+        for a in flows:
+            dpid = flows[a]["datapath"]
+            if dpid not in ret:
+                ret[dpid] = []
+            flow_act = []
+            for act in flows[a]["actions"]:
+                action = flows[a]["actions"][act]
+                if action["http://www.w3.org/1999/02/22-rdf-syntax-ns#type"] == "ActionOutput":
+                    flow_act.append(OFPActionOutput(int(action["toPort"]), max_len=0xffff))
+            flow_act = [OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS, flow_act)]
+            # flows[a]["match"] = OFPMatch(**flows[a]["match"])
+            ret[dpid].append({"actions":flow_act, "match":OFPMatch(**flows[a]["match"])})
+        return ret
+
+
 
     def _check_inconsistent_flow(self):
         # check if the link is down but the corresponding flow is still forwarding
@@ -205,9 +322,9 @@ class StardogBackend(app_manager.RyuApp):
         g.add( (self.ns[flid], self.ns.flags,        Literal(0)) )
         g.add( (self.ns[flid], self.ns.table_id,     Literal(0)) )
         g.add( (self.ns[flid], self.ns.cookie,       Literal(id)) )
-        g.add( (self.ns[flid], self.ns.hopCount,       Literal(hopCount)) )
+        g.add( (self.ns[flid], self.ns.hopCount,     Literal(hopCount)) )
         g.add( (self.ns[flid], self.ns.path,       self.ns[pathid]) )
-        g.add( (self.ns[pathid], self.ns.hasFlow,  self.ns[flid] )   )
+        # g.add( (self.ns[pathid], self.ns.hasFlow,  self.ns[flid] )   )
 
 
         for (field, val) in match.iteritems():
@@ -220,7 +337,7 @@ class StardogBackend(app_manager.RyuApp):
             if action.type == 0:
                 pid = sid + "_port" + str(action.port)
                 g.add( (self.ns[actid], RDF.type, self.ns['ActionOutput']) )
-                g.add( (self.ns[actid], self.ns.toPort, self.ns[pid] ) )
+                g.add( (self.ns[actid], self.ns.toPort, Literal(action.port) ))
                 action_count = action_count + 1
 #            elif action.type ==
 
@@ -250,7 +367,7 @@ class StardogBackend(app_manager.RyuApp):
             g.add( (self.ns[flid], self.ns.hasAction, self.ns[actid]) )
             if action.type == 0:
                 g.add( (self.ns[actid], RDF.type, self.ns['ActionOutput']) )
-                g.add( (self.ns[actid], self.ns.toPort, self.ns[pid] ) )
+                g.add( (self.ns[actid], self.ns.toPort, Literal(action.port) ) )
                 action_count = action_count + 1
 
         self.insert_tuples(g)
