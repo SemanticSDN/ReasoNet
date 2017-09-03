@@ -18,12 +18,19 @@ import logging
 from ryu.base import app_manager
 from ryu.ofproto.ofproto_v1_3_parser import OFPMatch,OFPActionOutput, OFPInstructionActions
 import ryu.ofproto.ofproto_v1_3 as ofproto
-from rdflib import Graph, URIRef
 
+from rdflib import Graph, URIRef
 from rdflib import Literal, Namespace
 from rdflib.plugins.stores import sparqlstore
 from rdflib.namespace import RDF
+from rdflib.query import Result
+
+import StringIO
 from os import system
+
+from requests_toolbelt.multipart import decoder
+import requests
+
 
 LOG = logging.getLogger("StardogBackend")
 
@@ -79,8 +86,8 @@ class StardogBackend(app_manager.RyuApp):
         super(StardogBackend, self).__init__(*args, **kwargs)
         self.name = 'stardogBackend'
         self.db = "test-haris"
-        self.endpoint = 'http://10.30.65.148:5820/%s/query'%(self.db)
-        self.updateEndpoint = 'http://10.30.65.148:5820/%s/update'%(self.db)
+        self.endpoint = 'http://localhost:5820/%s/query'%(self.db)
+        self.updateEndpoint = 'http://localhost:5820/%s/update'%(self.db)
         self.store = sparqlstore.SPARQLUpdateStore()
         self.store.open((self.endpoint, self.updateEndpoint))
         self.store.setCredentials('admin', 'admin')
@@ -89,12 +96,16 @@ class StardogBackend(app_manager.RyuApp):
         self.ng = Graph(self.store, identifier=self.default_graph)
 
         # Dirty hack to cleat the db upon restart
-        system('curl -X POST -d "query=CLEAR ALL" "http://admin:admin@10.30.65.148:5820/%s/update"'%(self.db))
+        system('curl -X POST -d "query=CLEAR ALL" "http://admin:admin@localhost:5820/%s/update"'%(self.db))
 
         g = Graph()
-        g.parse("/home/ubuntu/ryu-haris/ryu/app/sardonic-v9.ttl", format="n3")
+        g.parse("/home/vagrant/ryu-haris/ryu/app/sardonic-v9.ttl", format="n3")
         self.insert_tuples(g)
+        self.cb_violations = {}
         return
+
+    def register_violation_callback(self, typ, cb, obj):
+        self.cb_violations[typ] = {"cb": cb, "self": obj}
 
     def insert_tuples(self, g):
         cmd = (u'INSERT DATA { %s  }' % (
@@ -104,9 +115,36 @@ class StardogBackend(app_manager.RyuApp):
         self.store.commit()
         return True
 
+    def check_violations(self):
+        res = []
+        headers = {
+            'Content-Type': 'application/x-turtle, text/turtle, application/rdf+xml'
+        }
+        req = requests.post('http://admin:admin@localhost:5820/test-haris/icv/violations',
+                            headers=headers)
+
+        resp = decoder.MultipartDecoder.from_response(req)
+        for p in resp.parts:
+            print(p.headers)
+            #if "rdf+xml" in p.headers["Content-Type"]:
+            #    g = Graph()
+            #    g.parse(data=p.content, format=p.headers["Content-Type"])
+            if "sparql-result" in p.headers["Content-Type"]:
+                g = Result('SELECT')
+                g = g.parse(StringIO.StringIO(p.content)) # , format=p.headers["Content-Type"])
+                for r in g:
+                    res.append({"type":"path", "entity": r["path"]})
+        return res
+
     def update(self, cmd):
         self.store.update(cmd)
-        return self.store.commit()
+        self.store.commit()
+        icvs = self.check_violations()
+        for icv in icvs:
+            print("fixing violation " + str(icv))
+            self.cb_violations[icv["type"]]["cb"](self.cb_violations[icv["type"]]["self"], icv["entity"])
+
+        return ()
 
 #    @set_ev_cls(EventInsertTuples)
 #    def _insert_tuple_handler(self, ev):
@@ -125,7 +163,7 @@ class StardogBackend(app_manager.RyuApp):
         ?flid ?flprop ?flval
         } where {
         of:%s ?sprop ?sval.
-        ?flid of:isIn of:%s;
+        ?-1flid of:isIn of:%s;
         ?flprop ?flval
         }
         """ % (id, id, id)
@@ -310,7 +348,7 @@ class StardogBackend(app_manager.RyuApp):
         return bool(res)
 
 
-    def add_path_flow_state(self, id, dpid, priority, match, actions, hopCount, pathid):
+    def add_path_flow_state(self, id, dpid, priority, match, actions, pathhopid):
         g = Graph()
         sid = 's' + str(dpid)
         flid = 's' + str(dpid) + '_flow' + str(id)
@@ -322,8 +360,8 @@ class StardogBackend(app_manager.RyuApp):
         g.add( (self.ns[flid], self.ns.flags,        Literal(0)) )
         g.add( (self.ns[flid], self.ns.table_id,     Literal(0)) )
         g.add( (self.ns[flid], self.ns.cookie,       Literal(id)) )
-        g.add( (self.ns[flid], self.ns.hopCount,     Literal(hopCount)) )
-        g.add( (self.ns[flid], self.ns.path,       self.ns[pathid]) )
+        g.add( (self.ns[flid], self.ns.hasPathHop,   self.ns[pathhopid]))
+#        g.add( (self.ns[flid], self.ns.path,       self.ns[pathhopid]) )
         # g.add( (self.ns[pathid], self.ns.hasFlow,  self.ns[flid] )   )
 
 

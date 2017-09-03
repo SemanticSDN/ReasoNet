@@ -48,6 +48,7 @@ class TopologyManager(app_manager.RyuApp):
         self.backend = kwargs["backend"]
         self.flowManager = kwargs["flowManager"]
         self.dps = {}
+        self.links = []
         self.ns = Namespace('http://home.eps.hw.ac.uk/~qz1/')
 
     @set_ev_cls(dpset.EventDP, dpset.DPSET_EV_DISPATCHER)
@@ -61,7 +62,7 @@ class TopologyManager(app_manager.RyuApp):
     def switch_features_handler(self, ev):
         datapath = ev.msg.datapath
         ofproto = datapath.ofproto
-        parser = datapath.ofproto_parser
+        # parser = datapath.ofproto_parser
 
         # install the table-miss flow entry.
         ofproto = datapath.ofproto
@@ -99,7 +100,7 @@ class TopologyManager(app_manager.RyuApp):
     @set_ev_cls(event.EventPortAdd)
     def topo_port_add(self, ev):
         g = Graph()
-        self.add_port_to_graph(g, ev.port.dpid, ev.port)
+        self._add_port_to_graph(g, ev.port.dpid, ev.port)
         self.backend.insert_tuples(g)
         return
 
@@ -109,10 +110,17 @@ class TopologyManager(app_manager.RyuApp):
         pid = s + "_port" + str(ev.port.port_no)
         cmd = """
         PREFIX of: <http://home.eps.hw.ac.uk/~qz1/>
-        delete {%s of:isUP ?p}
-        insert {%s of:isUP %s}
-        where  {%s of:isUP ?p}
-        """ % (pid, pid, ev.port.is_live(), pid)
+        delete {
+            %s of:isUP ?p.
+        }
+        insert {
+        %s of:isUP "%s".
+        }
+        where  {
+            %s of:isUP ?p.
+        }
+        """ % (pid, pid, Literal(ev.port.is_live()), pid)
+        print(cmd)
         self.backend.update(cmd)
 
         return
@@ -126,23 +134,43 @@ class TopologyManager(app_manager.RyuApp):
         did = 's' + str(ev.link.dst.dpid)
         dpid = did + "_port" + str(ev.link.dst.port_no)
         linkid = "link_" + spid + "_" + dpid
-        LOG.debug("found new link %s %s" % (spid, dpid))
-        g.add( (self.ns[spid], self.ns.connectToPort,
-                self.ns[dpid])  )
-#        g.add( (self.ns[dpid], self.ns.connectToPort,
-#                self.ns[spid])  )
-        g.add( (self.ns[linkid], RDF.type, self.ns['Link'])  )
-        g.add( (self.ns[linkid], self.ns.hasSrcPort,
-                self.ns[spid])  )
-        g.add( (self.ns[linkid], self.ns.hasDstPort,
-                self.ns[dpid])  )
-        g.add( (self.ns[linkid], self.ns.isEnabled, Literal(True))  )
-        g.add( (self.ns[linkid], self.ns.hasCapacity, Literal(1000000000) ) )
-        g.add( (self.ns[linkid], self.ns.hasLoad, Literal(0) ) )
+        if linkid not in self.links:
+            LOG.info("found new link %s" % (linkid))
+            self.links.append(linkid)
+            g.add( (self.ns[spid], self.ns.connectToPort,
+                    self.ns[dpid])  )
+            #        g.add( (self.ns[dpid], self.ns.connectToPort,
+            #                self.ns[spid])  )
+            g.add( (self.ns[linkid], RDF.type, self.ns['Link'])  )
+            g.add( (self.ns[linkid], self.ns.hasSrcPort,
+                    self.ns[spid])  )
+            g.add( (self.ns[linkid], self.ns.hasDstPort,
+                    self.ns[dpid])  )
+            g.add( (self.ns[linkid], self.ns.isEnabled, Literal(True))  )
+            g.add( (self.ns[linkid], self.ns.hasCapacity, Literal(1000000000) ) )
+            g.add( (self.ns[linkid], self.ns.hasLoad, Literal(0) ) )
 
 ##        g.add( (self.ns[linkid], self.ns.connectToPort,
 #                self.ns[spid])  )
-        self.backend.insert_tuples(g)
+            self.backend.insert_tuples(g)
+        else:
+            cmd = """
+            PREFIX of: <http://home.eps.hw.ac.uk/~qz1/>
+            delete {
+                of:%s of:isEnabled ?status.
+                ?port1 of:connectToPort ?port2.
+            }
+            insert {of:%s of:isEnabled "true".}
+            where {
+                of:%s rdf:type of:Link;
+                      ?v ?p;
+                      of:hasSrcPort ?port1;
+                      of:hasDstPort ?port2;
+                      of:isEnabled ?status.
+              FILTER(?port1!=?port2)
+            }
+            """ % (linkid, linkid, linkid)
+            self.backend.update(cmd)
         return
 
     @set_ev_cls(event.EventLinkDelete)
@@ -156,15 +184,16 @@ class TopologyManager(app_manager.RyuApp):
         cmd = """
         PREFIX of: <http://home.eps.hw.ac.uk/~qz1/>
         delete {
-            %s of:isEnabled True.
+            %s of:isEnabled ?status.
             ?port1 of:connectToPort ?port2.
         }
-        insert {%s of:isEnabled False.}
+        insert {%s of:isEnabled "false".}
         where {
             %s rdf:type of:Link;
                   ?v ?p;
-                  of:dhasSrcPort ?port1;
-                  of:hasDstPort ?port2.
+                  of:hasSrcPort ?port1;
+                  of:hasDstPort ?port2;
+                  of:isEnabled ?status.
           FILTER(?port1!=?port2)
         }
         """ % (linkid, linkid, linkid)
@@ -199,8 +228,9 @@ class TopologyManager(app_manager.RyuApp):
             for h in hosts:
                 hid_gen += 1
                 swid = 's' + str(h.port.dpid)
-                hid = swid + "_host" + str(hid_gen)
                 pid = swid + "_port" + str(h.port.port_no)
+                hid = swid + "_host" + str(h.mac)
+                linkid = "link_%s_%s" % (pid, hid)
                 LOG.debug("sw %s host %s %s", h.port.dpid, hid, h.mac)
                 g.add( (self.ns[hid], RDF.type, self.ns['Host'])  )
 #                 g.add( (self.ns[swid], self.ns.hasHost, self.ns[hid]) )
@@ -210,6 +240,26 @@ class TopologyManager(app_manager.RyuApp):
                 for ip in h.ipv4:
                     g.add( (self.ns[hid], self.ns.hasIPv4, Literal(ip)) )
                 g.add( (self.ns[hid], self.ns.hasMAC,  Literal(h.mac)) )
+
+                linkid = "link_%s_%s" % (pid, hid)
+                g.add( (self.ns[linkid], RDF.type, self.ns['Link'])  )
+                g.add( (self.ns[linkid], self.ns.hasSrcPort,
+                        self.ns[pid])  )
+                g.add( (self.ns[linkid], self.ns.hasDstPort,
+                        self.ns[hid])  )
+                g.add( (self.ns[linkid], self.ns.isEnabled, Literal(True))  )
+                g.add( (self.ns[linkid], self.ns.hasCapacity, Literal(1000000000) ) )
+                g.add( (self.ns[linkid], self.ns.hasLoad, Literal(0) ) )
+
+                linkid = "link_%s_%s" % (hid, pid)
+                g.add( (self.ns[linkid], RDF.type, self.ns['Link'])  )
+                g.add( (self.ns[linkid], self.ns.hasSrcPort,
+                        self.ns[hid])  )
+                g.add( (self.ns[linkid], self.ns.hasDstPort,
+                        self.ns[pid])  )
+                g.add( (self.ns[linkid], self.ns.isEnabled, Literal(True))  )
+                g.add( (self.ns[linkid], self.ns.hasCapacity, Literal(1000000000) ) )
+                g.add( (self.ns[linkid], self.ns.hasLoad, Literal(0) ) )
 
             # rep = self.send_request(EventInsertTuples(g))i
             self.backend.insert_tuples(g)

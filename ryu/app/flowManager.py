@@ -38,6 +38,7 @@ LOG = logging.getLogger("FlowManager")
 class FlowManager(app_manager.RyuApp):
     OFP_VERSIONS = [ofproto_v1_3.OFP_VERSION]
 
+
     _CONTEXTS = {
         'backend': StardogBackend,
     }
@@ -63,6 +64,7 @@ class FlowManager(app_manager.RyuApp):
     @set_ev_cls(dpset.EventDP, dpset.DPSET_EV_DISPATCHER)
     def handler_datapath(self, ev):
         if ev.enter:
+	    LOG.info("received new switch %d" % ev.dp.id)
             self.dps[ev.dp.id] = ev.dp
         else:
             del  self.dps[ev.dp.id]
@@ -89,7 +91,7 @@ class FlowManager(app_manager.RyuApp):
         inst = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS, actions)]
         return self._add_flow(datapath, priority, match, inst, bid)
 
-    def add_path_flow(self, pathid, hopCount,
+    def add_path_flow(self, pathhopid,
                       datapath, priority=1, match=None,
                       actions=None, buffer_id=None, output=None, queue=None):
         ofproto = datapath.ofproto
@@ -103,15 +105,15 @@ class FlowManager(app_manager.RyuApp):
         if queue is not None:
             qid = output * 100 + self.flow_count
             # pid = "s%d-eth%d"%(datapath.id, output)
-            self._create_queue(datapath, output, qid, queue, pathid)
+            self._create_queue(datapath, output, qid, queue, pathhopid)
             actions.append(parser.OFPActionSetQueue(qid))
         actions.append(parser.OFPActionOutput(out,ofproto.OFPCML_NO_BUFFER ))
 
         self.backend.add_path_flow_state(self.flow_count, datapath.id, priority, match, actions,
-                                         hopCount, pathid)
+                                         pathhopid)
         self.flow_count = self.flow_count + 1
         inst = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS, actions)]
-        return # self._add_flow(datapath, priority, match, inst, bid)
+        return self._add_flow(datapath, priority, match, inst, bid)
 
     def flow_monitor(self):
        while self.is_active:
@@ -129,6 +131,7 @@ class FlowManager(app_manager.RyuApp):
                     for ix in res:
                         print("found flow %s" % (m))
                         del my_flows[dpid][ix]
+                        break
                     if len(res) == 0:
                         if dpid not in del_flows:
                             del_flows[dpid] = []
@@ -174,7 +177,7 @@ class FlowManager(app_manager.RyuApp):
             return
         locks.set()
 
-    def _create_queue(self, datapath, pid, qid, rate, pathid):
+    def _create_queue(self, datapath, pid, qid, rate, pathhopid):
         ovs = OVSBridge(cfg.CONF, datapath.id, "unix:/var/run/openvswitch/db.sock")
         ovs.init()
         LOG.debug("creating queue %d on port %s" %(qid, pid))
@@ -188,9 +191,9 @@ class FlowManager(app_manager.RyuApp):
         pid = "s%d_port%d"%(datapath.id, pid)
         LOG.info("inserting the queue " + qid + " on queue " + pid)
         g.add( (self.ns[pid], self.ns.hasQueue, self.ns[qid]) )
-        if pathid is not None:
-            LOG.info("adding queue %s for path %s" % (qid, pathid))
-            g.add( (self.ns[qid], self.ns.hasPath, self.ns[pathid])  )
+        if pathhopid is not None:
+            LOG.info("adding queue %s for path %s" % (qid, pathhopid))
+            g.add( (self.ns[qid], self.ns.hasPathHop, self.ns[pathhopid])  )
         g.add( (self.ns[qid], self.ns.hasBW, Literal(rate)) )
         self.backend.insert_tuples(g)
 
