@@ -99,7 +99,7 @@ class StardogBackend(app_manager.RyuApp):
         system('curl -X POST -d "query=CLEAR ALL" "http://admin:admin@localhost:5820/%s/update"'%(self.db))
 
         g = Graph()
-        g.parse("/home/vagrant/ryu-haris/ryu/app/sardonic-v9.ttl", format="n3")
+        g.parse("ryu/app/reasonet-schema.ttl", format="n3")
         self.insert_tuples(g)
         self.cb_violations = {}
         return
